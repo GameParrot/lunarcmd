@@ -9,4 +9,4 @@ The SwiftyJSON.swift is from https://github.com/IBM-Swift/SwiftyJSON, with a few
 # Downloading
 To download, use the appropriate zip file from Releases. If on Linux, run the lunarcmd shell script, NOT the executable in bin/. This will set the LD_LIBRARY_PATH variable correctly so you don't get missing library errors.
 # Signing in
-If you can't sign in to your Microsoft account, try opening the official Lunar Client launcher. This is because the Launcher needs to be opened to sign in. Once you sign in once, you should stay signed in.
+If you can't sign in to your Microsoft account, try opening the official Lunar Client launcher and signing in again. This is because the Launcher needs to be opened to sign in. Once you sign in once, you should stay signed in.
