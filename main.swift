@@ -43,6 +43,7 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
             if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
                 let data = try Data(contentsOf: URL(string: licenses[i]["url"].string!)!)
                 try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
+                print("Downloaded license:", licenses[i]["file"].string!)
             }
         }
     }
@@ -59,6 +60,7 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
         try tarex.run() // Extracts the tar.gz archive
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
+        print("Downloaded Java")
     }
 }
 func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Lunar Client jars and natives
@@ -67,10 +69,9 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     }
     for i in 0...artifacts.count {
         if artifacts[i]["url"].string != nil {
-            if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!) {
                 let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
                 try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
-            }
+                print("Downloaded JAR:", artifacts[i]["name"].string!)
         }
     }
 }
