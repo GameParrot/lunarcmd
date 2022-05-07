@@ -3,7 +3,7 @@ LunarCmd will launch Lunar Client from the command line.
 # Usage
 To start with default settings run `lunarcmd <lunar_version>`. lunar_version can be any Lunar Client version (ex: 1.8)
 # Building
-To build, run `make`. To install after building, run `sudo make install`.
+To build, run `make`. To install after building, run `sudo make install`. You will need to have Swift installed to build.
 # SwiftyJSON
 The SwiftyJSON.swift is from https://github.com/IBM-Swift/SwiftyJSON, with a few small modifications to make building work on Linux.
 # Downloading
