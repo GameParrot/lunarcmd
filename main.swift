@@ -69,9 +69,9 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     }
     for i in 0...artifacts.count {
         if artifacts[i]["url"].string != nil {
-                let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
-                print("Downloaded JAR:", artifacts[i]["name"].string!)
+            let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+            try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
+            print("Downloaded JAR:", artifacts[i]["name"].string!)
         }
     }
 }
@@ -90,8 +90,8 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
         }
     }
 }
-func downloadVersionData() {
-    let json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.10.1", "version": "\(argv[1])", "branch": "master", "launch_type": "0", "classifier": "0"]
+func downloadVersionData(branch: String) {
+    let json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.10.1", "version": "\(argv[1])", "branch": branch, "launch_type": "0", "classifier": "0"]
     
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     
@@ -103,7 +103,7 @@ func downloadVersionData() {
     // insert json data to the request
     request.httpBody = jsonData
     var responseData = "".data(using: .utf8)
-
+    
     let task = URLSession.shared.dataTask(with: request) { data, response, error in
         guard let data = data, error == nil else {
             print(error?.localizedDescription ?? "No data")
@@ -116,6 +116,10 @@ func downloadVersionData() {
         usleep(500000)
     }
     let jsonresponse = JSON(data: responseData!) // Converts the response to JSON
+    if jsonresponse["success"].bool != true {
+        fputs("Error: Could not get launch data\n", stderr)
+        exit(-1)
+    }
     do {
         try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
@@ -130,11 +134,70 @@ func downloadVersionData() {
 }
 if argv.count > 1 {
     if argv.contains("-h") || argv.contains("--help") {
-        print("usage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>]")
+        print("usage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>]")
         exit(0)
     }
+    // Argument checks below
+    if argv.contains("--server") {
+        if !argv.indices.contains(argv.firstIndex(of: "--server")! + 1) {
+            fputs("Error: --server requires a server to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--jvm") {
+        var checkIndex = 0
+        for i in argv {
+            if i == "--jvm" {
+                if !argv.indices.contains(checkIndex + 1) {
+                    fputs("Error: --jvm requires an option to be specified\n", stderr)
+                    exit(-1)
+                }
+            }
+            checkIndex+=1
+        }
+    }
+    if argv.contains("--gameDir") {
+        if !argv.indices.contains(argv.firstIndex(of: "--gameDir")! + 1) {
+            fputs("Error: --gameDir requires a game directory to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--javaExec") {
+        if !argv.indices.contains(argv.firstIndex(of: "--javaExec")! + 1) {
+            fputs("Error: --javaExec requires a java executable to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--mem") {
+        if !argv.indices.contains(argv.firstIndex(of: "--mem")! + 1) {
+            fputs("Error: --mem requires an amount of memory to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--width") {
+        if !argv.indices.contains(argv.firstIndex(of: "--width")! + 1) {
+            fputs("Error: --width requires the window width to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--height") {
+        if !argv.indices.contains(argv.firstIndex(of: "--height")! + 1) {
+            fputs("Error: --height requires the window height to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    if argv.contains("--branch") {
+        if !argv.indices.contains(argv.firstIndex(of: "--branch")! + 1) {
+            fputs("Error: --branch requires the branch to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+    var branch = "master"
+    if argv.contains("--branch") {
+        branch = argv[argv.firstIndex(of: "--branch")! + 1]
+    }
     print("Downloading Lunar assets...")
-    downloadVersionData()
+    downloadVersionData(branch:  branch)
     if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])") {
         fputs("Error: version is invalid or it has never been launched before in Lunar Client\n", stderr)
         exit(-1)
@@ -142,79 +205,109 @@ if argv.count > 1 {
     if argv.contains("--gameDir") {
         gameDir = URL(fileURLWithPath: argv[argv.firstIndex(of: "--gameDir")! + 1]).path // Sets the game directory to the --gameDir argument value if specified
     }
+    var javaExec = "default"
+    if argv.contains("--javaExec") {
+        javaExec = argv[argv.firstIndex(of: "--javaExec")! + 1]
+    }
     print("Updating asset index...")
-    getAssets(version: argv[1]) // Updates the asset index
+    do {
+        try getAssets(version: argv[1]) // Updates the asset index
+    } catch {
+        fputs("Error downloading assets\n", stderr)
+        exit(-1)
+    }
     print("Preparing to launch Lunar Client \(argv[1])")
     let lunarCmd = Process()
-    let jreVersionPath = FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])" // Sets the path to the Java folder
-    try! lunarCmd.executableURL = URL(fileURLWithPath: jreVersionPath + "/" + FileManager.default.contentsOfDirectory(atPath: jreVersionPath)[0] + "/bin/java")
-    lunarCmd.arguments = []
-    if os == "darwin" {
-    if Int(argv[1].components(separatedBy: ".")[1])! > 12 {
-        lunarCmd.arguments?.append("-XstartOnFirstThread")
-    } else {
-        lunarCmd.arguments?.append("-Xdock:name=Lunar Client") // Sets the dock name for versions older than 1.13 on Mac
-        lunarCmd.arguments?.append("-Xdock:icon=/Applications/Lunar Client.app/Contents/Resources/Lunar Client.icns")
-    }
-    }
-    var repeatIndex = 0
-    // The 8 lines below this comment set the JVM arguments
-    lunarCmd.arguments?.append("--add-modules")
-    lunarCmd.arguments?.append("jdk.naming.dns")
-    lunarCmd.arguments?.append("--add-exports")
-    lunarCmd.arguments?.append("jdk.naming.dns/com.sun.jndi.dns=java.naming")
-    lunarCmd.arguments?.append("-Djna.boot.library.path=natives")
-    lunarCmd.arguments?.append("--add-opens")
-    lunarCmd.arguments?.append("java.base/java.io=ALL-UNNAMED")
-    lunarCmd.arguments?.append("-cp")
-    var classpath = ""
-    for i in try! FileManager.default.contentsOfDirectory(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])") {
-        if i.contains(".jar") || i.contains("optifine") {
-            repeatIndex+=1
-            if repeatIndex != 1 {
-                classpath = classpath + ":" + i
+    do {
+        let jreVersionPath = FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])" // Sets the path to the Java folder
+        if javaExec == "default" {
+            try lunarCmd.executableURL = URL(fileURLWithPath: jreVersionPath + "/" + FileManager.default.contentsOfDirectory(atPath: jreVersionPath)[0] + "/bin/java")
+        } else {
+            lunarCmd.executableURL = URL(fileURLWithPath: javaExec)
+        }
+        lunarCmd.arguments = []
+        if os == "darwin" {
+            if Int(argv[1].components(separatedBy: ".")[1])! > 12 {
+                lunarCmd.arguments?.append("-XstartOnFirstThread")
             } else {
-                classpath = classpath + i
+                lunarCmd.arguments?.append("-Xdock:name=Lunar Client") // Sets the dock name for versions older than 1.13 on Mac
+                lunarCmd.arguments?.append("-Xdock:icon=/Applications/Lunar Client.app/Contents/Resources/Lunar Client.icns")
             }
         }
-    }
-    lunarCmd.arguments?.append(classpath) // Adds the classpath
-    if argv.contains("--mem") {
-        lunarCmd.arguments?.append("-Xms" + argv[argv.firstIndex(of: "--mem")! + 1])
-        lunarCmd.arguments?.append("-Xmx" + argv[argv.firstIndex(of: "--mem")! + 1])
-    }
-    lunarCmd.arguments?.append("-Djava.library.path=natives") // Sets more JVM args
-    lunarCmd.arguments?.append("-XX:+DisableAttachMechanism")
-    if os == "darwin" {
-    lunarCmd.arguments?.append("-Dapple.awt.application.appearance=system")
-    }
-    lunarCmd.arguments?.append("-Dlog4j2.formatMsgNoLookups=true")
-    lunarCmd.arguments?.append("com.moonsworth.lunar.patcher.LunarMain")
-    lunarCmd.arguments?.append("--version") // Sets game args
-    lunarCmd.arguments?.append(argv[1])
-    lunarCmd.arguments?.append("--accessToken")
-    lunarCmd.arguments?.append("0")
-    lunarCmd.arguments?.append("--assetIndex")
-    lunarCmd.arguments?.append(argv[1])
-    lunarCmd.arguments?.append("--texturesDir")
-    lunarCmd.arguments?.append(FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures")
-    lunarCmd.arguments?.append("--gameDir")
-    lunarCmd.arguments?.append(gameDir)
-    if argv.contains("--server") {
-        lunarCmd.arguments?.append("--server=" + argv[argv.firstIndex(of: "--server")! + 1])
-    }
-    if os == "darwin" {
-    lunarCmd.arguments?.append("-NSRequiresAquaSystemAppearance")
-    lunarCmd.arguments?.append("False")
-    }
-    lunarCmd.currentDirectoryURL = URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/")
-    do {
+        var repeatIndex = 0
+        // The 8 lines below this comment set the JVM arguments
+        lunarCmd.arguments?.append("--add-modules")
+        lunarCmd.arguments?.append("jdk.naming.dns")
+        lunarCmd.arguments?.append("--add-exports")
+        lunarCmd.arguments?.append("jdk.naming.dns/com.sun.jndi.dns=java.naming")
+        lunarCmd.arguments?.append("-Djna.boot.library.path=natives")
+        lunarCmd.arguments?.append("--add-opens")
+        lunarCmd.arguments?.append("java.base/java.io=ALL-UNNAMED")
+        lunarCmd.arguments?.append("-cp")
+        var classpath = ""
+        for i in try FileManager.default.contentsOfDirectory(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])") {
+            if i.contains(".jar") || i.contains("optifine") {
+                repeatIndex+=1
+                if repeatIndex != 1 {
+                    classpath = classpath + ":" + i
+                } else {
+                    classpath = classpath + i
+                }
+            }
+        }
+        lunarCmd.arguments?.append(classpath) // Adds the classpath
+        if argv.contains("--mem") {
+            lunarCmd.arguments?.append("-Xms" + argv[argv.firstIndex(of: "--mem")! + 1])
+            lunarCmd.arguments?.append("-Xmx" + argv[argv.firstIndex(of: "--mem")! + 1])
+        }
+        lunarCmd.arguments?.append("-Djava.library.path=natives") // Sets more JVM args
+        lunarCmd.arguments?.append("-XX:+DisableAttachMechanism")
+        if os == "darwin" {
+            lunarCmd.arguments?.append("-Dapple.awt.application.appearance=system")
+        }
+        lunarCmd.arguments?.append("-Dlog4j2.formatMsgNoLookups=true")
+        if argv.contains("--jvm") {
+            var jvmArgIndex = 0
+            for i in argv { // Adds JVM args passed with --jvm
+                if i == "--jvm" {
+                    lunarCmd.arguments?.append(argv[jvmArgIndex + 1])
+                }
+                jvmArgIndex+=1
+            }
+        }
+        lunarCmd.arguments?.append("com.moonsworth.lunar.patcher.LunarMain")
+        lunarCmd.arguments?.append("--version") // Sets game args
+        lunarCmd.arguments?.append(argv[1])
+        lunarCmd.arguments?.append("--accessToken")
+        lunarCmd.arguments?.append("0")
+        lunarCmd.arguments?.append("--assetIndex")
+        lunarCmd.arguments?.append(argv[1])
+        lunarCmd.arguments?.append("--texturesDir")
+        lunarCmd.arguments?.append(FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures")
+        lunarCmd.arguments?.append("--gameDir")
+        lunarCmd.arguments?.append(gameDir)
+        if argv.contains("--server") {
+            lunarCmd.arguments?.append("--server=" + argv[argv.firstIndex(of: "--server")! + 1])
+        }
+        if argv.contains("--width") {
+            lunarCmd.arguments?.append("--width=" + argv[argv.firstIndex(of: "--width")! + 1])
+        }
+        if argv.contains("--height") {
+            lunarCmd.arguments?.append("--height=" + argv[argv.firstIndex(of: "--height")! + 1])
+        }
+        if os == "darwin" {
+            lunarCmd.arguments?.append("-NSRequiresAquaSystemAppearance")
+            lunarCmd.arguments?.append("False")
+        }
+        lunarCmd.currentDirectoryURL = URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/")
+        print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
         try lunarCmd.run()
     } catch {
-        
+        fputs("Error launching game\n", stderr)
+        exit(-1)
     }
     signal(SIGINT, SIG_IGN)
-
+    
     let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
     sigintSource.setEventHandler {
         lunarCmd.interrupt()
@@ -223,7 +316,7 @@ if argv.count > 1 {
     lunarCmd.waitUntilExit()
     
 } else {
-    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>]\n", stderr)
+    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>]\n", stderr)
     exit(-1)
 }
 func prase(string: String, key: String) -> [String] {
@@ -235,24 +328,24 @@ func prase(string: String, key: String) -> [String] {
     keys.remove(at: 0)
     return keys
 }
-func getAssets(version: String) {
-    let versions = try! prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "id")
-   let jsons = try! prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "url")
-    let jsonData = try! String(contentsOf: URL(string: jsons[versions.firstIndex(of: version)!])!)
-   let assetIndex = prase(string: jsonData, key: "url")[0]
+func getAssets(version: String) throws {
+    let versions = try prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "id")
+    let jsons = try prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "url")
+    let jsonData = try String(contentsOf: URL(string: jsons[versions.firstIndex(of: version)!])!)
+    let assetIndex = prase(string: jsonData, key: "url")[0]
     if !FileManager.default.fileExists(atPath: gameDir + "/assets/indexes/") {
-        try! FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/indexes"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/indexes"), withIntermediateDirectories: true)
     }
     if !FileManager.default.fileExists(atPath: gameDir + "/assets/indexes/" + version + ".json") {
-        try! Data(contentsOf: URL(string: assetIndex)!).write(to: URL(fileURLWithPath: gameDir + "/assets/indexes/" + version + ".json")) // Downloads the asset and saves it
+        try Data(contentsOf: URL(string: assetIndex)!).write(to: URL(fileURLWithPath: gameDir + "/assets/indexes/" + version + ".json")) // Downloads the asset and saves it
     }
-   let hashes = try! prase(string: String(contentsOf: URL(string: assetIndex)!), key: "hash")
-   for i in 0...hashes.count - 1 {
-       let first2hash = String(hashes[i].prefix(2))
-       if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-           try! FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-           try! Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-           print("Downloaded asset:", hashes[i])
-       }
-   }
+    let hashes = try prase(string: String(contentsOf: URL(string: assetIndex)!), key: "hash")
+    for i in 0...hashes.count - 1 {
+        let first2hash = String(hashes[i].prefix(2))
+        if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
+            try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
+            try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
+            print("Downloaded asset:", hashes[i])
+        }
+    }
 }
