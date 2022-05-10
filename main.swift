@@ -18,7 +18,7 @@ let osstring = "macos"
 #if arch(x86_64)
 let arch = "x64"
 #else
-print("Unsupported CPU arch")
+fputs("Unsupported CPU arch\n", stderr)
 exit(-1)
 #endif
 let argv = CommandLine.arguments // Sets a variable to the arguments
@@ -117,7 +117,7 @@ func downloadVersionData(branch: String) {
     }
     let jsonresponse = JSON(data: responseData!) // Converts the response to JSON
     if jsonresponse["success"].bool != true {
-        fputs("Error: Could not get launch data\n", stderr)
+        fputs("Error: Could not get launch data\nResponse: \(jsonresponse)\n", stderr)
         exit(-1)
     }
     do {
@@ -129,7 +129,8 @@ func downloadVersionData(branch: String) {
         try downloadJre(jreurl: jsonresponse["jre"]["download"]["url"].string!)
         try downloadLicenses(licenses: jsonresponse["licenses"])
     } catch {
-        print(error)
+        fputs("Could not get launch data\n\(error)\n", stderr)
+        exit(-1)
     }
 }
 if argv.count > 1 {
@@ -213,7 +214,7 @@ if argv.count > 1 {
     do {
         try getAssets(version: argv[1]) // Updates the asset index
     } catch {
-        fputs("Error downloading assets\n", stderr)
+        fputs("Error downloading assets\n\(error)\n", stderr)
         exit(-1)
     }
     print("Preparing to launch Lunar Client \(argv[1])")
@@ -303,7 +304,7 @@ if argv.count > 1 {
         print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
         try lunarCmd.run()
     } catch {
-        fputs("Error launching game\n", stderr)
+        fputs("Error launching game\n\(error)\n", stderr)
         exit(-1)
     }
     signal(SIGINT, SIG_IGN)
