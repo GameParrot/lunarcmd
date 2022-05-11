@@ -421,14 +421,13 @@ func getAssets(version: String) throws {
     dlqueue1.async {
         for i in 0...dlMcAssets1List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets1Done = true
@@ -436,14 +435,13 @@ func getAssets(version: String) throws {
     dlqueue2.async {
         for i in (dlMcAssets1List + 1)...dlMcAssets2List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets2Done = true
@@ -451,14 +449,13 @@ func getAssets(version: String) throws {
     dlqueue3.async {
         for i in (dlMcAssets2List + 1)...dlMcAssets3List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets3Done = true
@@ -466,14 +463,13 @@ func getAssets(version: String) throws {
     dlqueue4.async {
         for i in (dlMcAssets3List + 1)...dlMcAssets4List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets4Done = true
@@ -481,14 +477,13 @@ func getAssets(version: String) throws {
     dlqueue5.async {
         for i in (dlMcAssets4List + 1)...dlMcAssets5List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets5Done = true
@@ -496,14 +491,13 @@ func getAssets(version: String) throws {
     dlqueue6.async {
         for i in (dlMcAssets5List + 1)...dlMcAssets6List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets6Done = true
@@ -511,14 +505,13 @@ func getAssets(version: String) throws {
     dlqueue7.async {
         for i in (dlMcAssets6List + 1)...dlMcAssets7List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets7Done = true
@@ -526,14 +519,13 @@ func getAssets(version: String) throws {
     dlqueue8.async {
         for i in (dlMcAssets7List + 1)...dlMcAssets8List {
             do {
-                let first2hash = String(hashes[i].prefix(2))
-                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-                    try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
-                }
+                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                do {
+                    try downloadMcAsset(i: i, hashes: hashes)
+                } catch {
+                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                }
             }
         }
         dlMcAssets8Done = true
@@ -565,16 +557,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue1.async {
         for i in 0...dlLAssets1List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets1Done = true
@@ -582,16 +571,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue2.async {
         for i in (dlLAssets1List + 1)...dlLAssets2List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         
@@ -600,16 +586,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue3.async {
         for i in (dlLAssets2List + 1)...dlLAssets3List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets3Done = true
@@ -617,16 +600,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue4.async {
         for i in (dlLAssets3List + 1)...dlLAssets4List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets4Done = true
@@ -634,16 +614,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue5.async {
         for i in (dlLAssets4List + 1)...dlLAssets5List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets5Done = true
@@ -651,16 +628,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue6.async {
         for i in (dlLAssets5List + 1)...dlLAssets6List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets6Done = true
@@ -668,16 +642,13 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue7.async {
         for i in (dlLAssets6List + 1)...dlLAssets7List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets7Done = true
@@ -685,21 +656,36 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue8.async {
         for i in (dlLAssets7List + 1)...dlLAssets8List {
             do {
-                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-                    }
-                    let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
-                }
+                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                do {
+                    try downloadLunarAsset(i: i, index: index, base: base)
+                } catch {
+                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                }
             }
         }
         dlLAssets8Done = true
     }
     while !dlLAssets1Done || !dlLAssets2Done || !dlLAssets3Done || !dlLAssets4Done || !dlLAssets5Done || !dlLAssets6Done || !dlLAssets7Done || !dlLAssets8Done {
         usleep(500000)
+    }
+}
+func downloadMcAsset(i: Int, hashes: [String]) throws {
+    let first2hash = String(hashes[i].prefix(2))
+    if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
+        try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
+        print("Downloaded asset:", hashes[i])
+    }
+}
+func downloadLunarAsset(i: Int, index: [String], base: String) throws {
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+        if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+            try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+        }
+        let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
+        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+        print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
     }
 }
