@@ -12,3 +12,4 @@ all:
 install:
 	-mkdir "$(prefix)/bin"
 	cp ./bin/* "$(prefix)/bin/"
+	@echo "\033[32;1mSuccessfully installed lunarcmd\033[0m"
