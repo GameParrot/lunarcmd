@@ -22,6 +22,7 @@ fputs("Unsupported CPU arch\n", stderr)
 exit(-1)
 #endif
 let argv = CommandLine.arguments // Sets a variable to the arguments
+let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
 var gameDir = FileManager.default.currentDirectoryPath + "/lunarcmd"
 let dlqueue1 = DispatchQueue(label: "com.gameparrot.DownloadThread1")
 let dlqueue2 = DispatchQueue(label: "com.gameparrot.DownloadThread2")
@@ -43,28 +44,28 @@ func unzip(zip: String, to: String) { // Function for unzipping
     }
 }
 func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar Client licenses
-    if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses") {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses"), withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses"), withIntermediateDirectories: true)
     }
     for i in 0...licenses.count {
         if licenses[i]["url"].string != nil {
-            if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
+            if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
                 let data = try Data(contentsOf: URL(string: licenses[i]["url"].string!)!)
-                try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
+                try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
                 print("Downloaded license:", licenses[i]["file"].string!)
             }
         }
     }
 }
 func downloadJre(jreurl: String) throws { // Function for downloading Java runtime
-    if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])") {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])"), withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])"), withIntermediateDirectories: true)
         let data = try Data(contentsOf: URL(string: jreurl)!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
         let tarex = Process()
         tarex.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
         tarex.arguments = ["-xf", "/tmp/jre.tar.gz"]
-        tarex.currentDirectoryURL = URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])")
+        tarex.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])")
         try tarex.run() // Extracts the tar.gz archive
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
@@ -104,8 +105,8 @@ func downloadVersionData(branch: String) {
     do {
         try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
-        if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/natives") {
-            unzip(zip: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip", to: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/natives")
+        if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives") {
+            unzip(zip: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip", to: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives")
         }
         try downloadJre(jreurl: jsonresponse["jre"]["download"]["url"].string!)
         try downloadLicenses(licenses: jsonresponse["licenses"])
@@ -180,7 +181,7 @@ if argv.count > 1 {
     }
     print("Downloading Lunar assets...")
     downloadVersionData(branch:  branch)
-    if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])") {
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])") {
         fputs("Error: version is invalid or it has never been launched before in Lunar Client\n", stderr)
         exit(-1)
     }
@@ -201,7 +202,7 @@ if argv.count > 1 {
     print("Preparing to launch Lunar Client \(argv[1])")
     let lunarCmd = Process()
     do {
-        let jreVersionPath = FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/jre/\(argv[1])" // Sets the path to the Java folder
+        let jreVersionPath = homeDir + "/.lunarcmd_data/jre/\(argv[1])" // Sets the path to the Java folder
         if javaExec == "default" {
             try lunarCmd.executableURL = URL(fileURLWithPath: jreVersionPath + "/" + FileManager.default.contentsOfDirectory(atPath: jreVersionPath)[0] + "/bin/java")
         } else {
@@ -227,7 +228,7 @@ if argv.count > 1 {
         lunarCmd.arguments?.append("java.base/java.io=ALL-UNNAMED")
         lunarCmd.arguments?.append("-cp")
         var classpath = ""
-        for i in try FileManager.default.contentsOfDirectory(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])") {
+        for i in try FileManager.default.contentsOfDirectory(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])") {
             if i.contains(".jar") || i.contains("optifine") {
                 repeatIndex+=1
                 if repeatIndex != 1 {
@@ -265,7 +266,7 @@ if argv.count > 1 {
         lunarCmd.arguments?.append("--assetIndex")
         lunarCmd.arguments?.append(argv[1])
         lunarCmd.arguments?.append("--texturesDir")
-        lunarCmd.arguments?.append(FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures")
+        lunarCmd.arguments?.append(homeDir + "/.lunarcmd_data/textures")
         lunarCmd.arguments?.append("--gameDir")
         lunarCmd.arguments?.append(gameDir)
         if argv.contains("--server") {
@@ -281,7 +282,7 @@ if argv.count > 1 {
             lunarCmd.arguments?.append("-NSRequiresAquaSystemAppearance")
             lunarCmd.arguments?.append("False")
         }
-        lunarCmd.currentDirectoryURL = URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/")
+        lunarCmd.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/")
         print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
         try lunarCmd.run()
     } catch {
@@ -311,8 +312,8 @@ func prase(string: String, key: String) -> [String] {
     return keys
 }
 func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Lunar Client jars and natives
-    if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])") {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])"), withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])"), withIntermediateDirectories: true)
     }
     var dlJava1Done = false
     var dlJava2Done = false
@@ -327,7 +328,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
             for i in 0...dlJava1List {
                 if artifacts[i]["url"].string != nil {
                     let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
                     print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
@@ -343,7 +344,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
             for i in (dlJava1List + 1)...dlJava2List {
                 if artifacts[i]["url"].string != nil {
                     let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
                     print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
@@ -358,7 +359,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
             for i in (dlJava2List + 1)...dlJava3List {
                 if artifacts[i]["url"].string != nil {
                     let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
                     print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
@@ -374,7 +375,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
             for i in (dlJava3List + 1)...dlJava4List {
                 if artifacts[i]["url"].string != nil {
                     let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/" + artifacts[i]["name"].string!))
                     print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
@@ -542,8 +543,8 @@ func getAssets(version: String) throws {
     }
 }
 func getLunarAssets(index: [String], base: String) throws { // Function for downloading Lunar assets
-    if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures") {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures"), withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures"), withIntermediateDirectories: true)
     }
     var dlLAssets1Done = false
     var dlLAssets2Done = false
@@ -564,12 +565,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue1.async {
         for i in 0...dlLAssets1List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -581,12 +582,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue2.async {
         for i in (dlLAssets1List + 1)...dlLAssets2List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -599,12 +600,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue3.async {
         for i in (dlLAssets2List + 1)...dlLAssets3List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -616,12 +617,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue4.async {
         for i in (dlLAssets3List + 1)...dlLAssets4List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -633,12 +634,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue5.async {
         for i in (dlLAssets4List + 1)...dlLAssets5List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -650,12 +651,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue6.async {
         for i in (dlLAssets5List + 1)...dlLAssets6List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -667,12 +668,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue7.async {
         for i in (dlLAssets6List + 1)...dlLAssets7List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
@@ -684,12 +685,12 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     dlqueue8.async {
         for i in (dlLAssets7List + 1)...dlLAssets8List {
             do {
-                if !FileManager.default.fileExists(atPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
                     }
                     let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
             } catch {
