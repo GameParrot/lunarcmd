@@ -117,7 +117,7 @@ func downloadVersionData(branch: String) {
 }
 if argv.count > 1 {
     if argv.contains("-h") || argv.contains("--help") {
-        print("usage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>]")
+        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--logAddons - Enables coloring certain log messages and prints chat messages directly")
         exit(0)
     }
     // Argument checks below
@@ -191,6 +191,10 @@ if argv.count > 1 {
     var javaExec = "default"
     if argv.contains("--javaExec") {
         javaExec = argv[argv.firstIndex(of: "--javaExec")! + 1]
+    }
+    var logAddons = false
+    if argv.contains("--logAddons") {
+        logAddons = true
     }
     print("Updating asset index...")
     do {
@@ -284,6 +288,22 @@ if argv.count > 1 {
         }
         lunarCmd.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/")
         print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
+        if logAddons {
+            let pipe = Pipe()
+            lunarCmd.standardOutput = pipe
+            lunarCmd.standardError = pipe
+            let outHandle = pipe.fileHandleForReading
+            
+            outHandle.readabilityHandler = { pipe in
+                if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
+                    let linee = line.components(separatedBy: " thread/INFO]: [CHAT] ")
+                    let line = linee[linee.count - 1]
+                    print(line.replacingOccurrences(of: "§r", with: "\u{001B}[0;0m").replacingOccurrences(of: "§l", with: "\u{001B}[1m").replacingOccurrences(of: "§0", with: "\u{001B}[38;5;232m").replacingOccurrences(of: "§1", with: "\u{001B}[38;5;19m").replacingOccurrences(of: "§2", with: "\u{001B}[38;5;34m").replacingOccurrences(of: "§3", with: "\u{001B}[38;5;30m").replacingOccurrences(of: "§4", with: "\u{001B}[38;5;88m").replacingOccurrences(of: "§5", with: "\u{001B}[38;5;92m").replacingOccurrences(of: "§6", with: "\u{001B}[38;5;214m").replacingOccurrences(of: "§7", with: "\u{001B}[38;5;250m").replacingOccurrences(of: "§8", with: "\u{001B}[38;5;243m").replacingOccurrences(of: "§9", with: "\u{001B}[38;5;27m").replacingOccurrences(of: "§a", with: "\u{001B}[38;5;46m").replacingOccurrences(of: "§b", with: "\u{001B}[38;5;51m").replacingOccurrences(of: "§c", with: "\u{001B}[38;5;203m").replacingOccurrences(of: "§d", with: "\u{001B}[38;5;201m").replacingOccurrences(of: "§e", with: "\u{001B}[38;5;226m").replacingOccurrences(of: "§f", with: "\u{001B}[38;5;231m").replacingOccurrences(of: "/WARN]:", with: "\u{001B}[0;33m/WARN]:").replacingOccurrences(of: "/FATAL]:", with: "\u{001B}[0;31m/FATAL]:").replacingOccurrences(of: "/ERROR]:", with: "\u{001B}[0;31m/ERROR]:") + "\u{001B}[0;0m", terminator:"")
+                } else {
+                    print("Error decoding data: \(pipe.availableData)")
+                }
+            }
+        }
         try lunarCmd.run()
     } catch {
         fputs("Error launching game\n\(error)\n", stderr)
@@ -299,7 +319,7 @@ if argv.count > 1 {
     lunarCmd.waitUntilExit()
     
 } else {
-    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>]\n", stderr)
+    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons]\nPass --help for more information\n", stderr)
     exit(-1)
 }
 func prase(string: String, key: String) -> [String] {
