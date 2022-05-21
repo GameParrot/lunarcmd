@@ -117,7 +117,7 @@ func downloadVersionData(branch: String) {
 }
 if argv.count > 1 {
     if argv.contains("-h") || argv.contains("--help") {
-        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--logAddons - Enables coloring certain log messages and prints chat messages directly")
+        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons] [--downloadOnly]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it")
         exit(0)
     }
     // Argument checks below
@@ -202,6 +202,10 @@ if argv.count > 1 {
     } catch {
         fputs("Error downloading assets\n\(error)\n", stderr)
         exit(-1)
+    }
+    if argv.contains("--downloadOnly") {
+        print("--downloadOnly passed, exiting")
+        exit(0)
     }
     print("Preparing to launch Lunar Client \(argv[1])")
     let lunarCmd = Process()
@@ -290,17 +294,26 @@ if argv.count > 1 {
         print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
         if logAddons {
             let pipe = Pipe()
+            let pipe1 = Pipe()
             lunarCmd.standardOutput = pipe
-            lunarCmd.standardError = pipe
+            lunarCmd.standardError = pipe1
             let outHandle = pipe.fileHandleForReading
+            let outHandle1 = pipe1.fileHandleForReading
             
             outHandle.readabilityHandler = { pipe in
                 if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
                     let linee = line.components(separatedBy: " thread/INFO]: [CHAT] ")
                     let line = linee[linee.count - 1]
-                    print(line.replacingOccurrences(of: "§r", with: "\u{001B}[0;0m").replacingOccurrences(of: "§l", with: "\u{001B}[1m").replacingOccurrences(of: "§0", with: "\u{001B}[38;5;232m").replacingOccurrences(of: "§1", with: "\u{001B}[38;5;19m").replacingOccurrences(of: "§2", with: "\u{001B}[38;5;34m").replacingOccurrences(of: "§3", with: "\u{001B}[38;5;30m").replacingOccurrences(of: "§4", with: "\u{001B}[38;5;88m").replacingOccurrences(of: "§5", with: "\u{001B}[38;5;92m").replacingOccurrences(of: "§6", with: "\u{001B}[38;5;214m").replacingOccurrences(of: "§7", with: "\u{001B}[38;5;250m").replacingOccurrences(of: "§8", with: "\u{001B}[38;5;243m").replacingOccurrences(of: "§9", with: "\u{001B}[38;5;27m").replacingOccurrences(of: "§a", with: "\u{001B}[38;5;46m").replacingOccurrences(of: "§b", with: "\u{001B}[38;5;51m").replacingOccurrences(of: "§c", with: "\u{001B}[38;5;203m").replacingOccurrences(of: "§d", with: "\u{001B}[38;5;201m").replacingOccurrences(of: "§e", with: "\u{001B}[38;5;226m").replacingOccurrences(of: "§f", with: "\u{001B}[38;5;231m").replacingOccurrences(of: "/WARN]:", with: "\u{001B}[0;33m/WARN]:").replacingOccurrences(of: "/FATAL]:", with: "\u{001B}[0;31m/FATAL]:").replacingOccurrences(of: "/ERROR]:", with: "\u{001B}[0;31m/ERROR]:") + "\u{001B}[0;0m", terminator:"")
+                    print("\u{001B}[0;0m" + line.replacingOccurrences(of: "§r", with: "\u{001B}[0;0m").replacingOccurrences(of: "§l", with: "\u{001B}[1m").replacingOccurrences(of: "§0", with: "\u{001B}[38;5;232m").replacingOccurrences(of: "§1", with: "\u{001B}[38;5;19m").replacingOccurrences(of: "§2", with: "\u{001B}[38;5;34m").replacingOccurrences(of: "§3", with: "\u{001B}[38;5;30m").replacingOccurrences(of: "§4", with: "\u{001B}[38;5;88m").replacingOccurrences(of: "§5", with: "\u{001B}[38;5;92m").replacingOccurrences(of: "§6", with: "\u{001B}[38;5;214m").replacingOccurrences(of: "§7", with: "\u{001B}[38;5;250m").replacingOccurrences(of: "§8", with: "\u{001B}[38;5;243m").replacingOccurrences(of: "§9", with: "\u{001B}[38;5;27m").replacingOccurrences(of: "§a", with: "\u{001B}[38;5;46m").replacingOccurrences(of: "§b", with: "\u{001B}[38;5;51m").replacingOccurrences(of: "§c", with: "\u{001B}[38;5;203m").replacingOccurrences(of: "§d", with: "\u{001B}[38;5;201m").replacingOccurrences(of: "§e", with: "\u{001B}[38;5;226m").replacingOccurrences(of: "§f", with: "\u{001B}[38;5;231m").replacingOccurrences(of: "/WARN]:", with: "\u{001B}[0;33m/WARN]:").replacingOccurrences(of: "/FATAL]:", with: "\u{001B}[0;31m/FATAL]:").replacingOccurrences(of: "/ERROR]:", with: "\u{001B}[0;31m/ERROR]:"), terminator:"")
                 } else {
                     print("Error decoding data: \(pipe.availableData)")
+                }
+            }
+                        outHandle1.readabilityHandler = { pipe1 in
+                if let line = String(data: pipe1.availableData, encoding: String.Encoding.utf8) {
+                    print("\u{001B}[0;0m\u{001B}[0;31m" + line, terminator:"")
+                } else {
+                    print("Error decoding data: \(pipe1.availableData)")
                 }
             }
         }
@@ -317,9 +330,9 @@ if argv.count > 1 {
     }
     sigintSource.resume()
     lunarCmd.waitUntilExit()
-    
+    print("\u{001B}[0;0m", terminator: "")
 } else {
-    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons]\nPass --help for more information\n", stderr)
+    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons] [--downloadOnly]\nPass --help for more information\n", stderr)
     exit(-1)
 }
 func prase(string: String, key: String) -> [String] {
