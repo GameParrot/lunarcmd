@@ -117,7 +117,7 @@ func downloadVersionData(branch: String) {
 }
 if argv.count > 1 {
     if argv.contains("-h") || argv.contains("--help") {
-        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons] [--downloadOnly]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it")
+        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it")
         exit(0)
     }
     // Argument checks below
@@ -148,6 +148,12 @@ if argv.count > 1 {
     if argv.contains("--javaExec") {
         if !argv.indices.contains(argv.firstIndex(of: "--javaExec")! + 1) {
             fputs("Error: --javaExec requires a java executable to be specified\n", stderr)
+            exit(-1)
+        }
+    }
+   if argv.contains("--storageDir") {
+        if !argv.indices.contains(argv.firstIndex(of: "--storageDir")! + 1) {
+            fputs("Error: --storageDir requires a storage directory to be specified\n", stderr)
             exit(-1)
         }
     }
@@ -191,6 +197,10 @@ if argv.count > 1 {
     var javaExec = "default"
     if argv.contains("--javaExec") {
         javaExec = argv[argv.firstIndex(of: "--javaExec")! + 1]
+    }
+    var storageDir = ""
+    if argv.contains("--storageDir") {
+        storageDir = argv[argv.firstIndex(of: "--storageDir")! + 1]
     }
     var logAddons = false
     if argv.contains("--logAddons") {
@@ -247,6 +257,9 @@ if argv.count > 1 {
             }
         }
         lunarCmd.arguments?.append(classpath) // Adds the classpath
+        if storageDir != "" {
+            lunarCmd.arguments?.append("-Duser.home=" + storageDir)
+        }
         if argv.contains("--mem") {
             lunarCmd.arguments?.append("-Xms" + argv[argv.firstIndex(of: "--mem")! + 1])
             lunarCmd.arguments?.append("-Xmx" + argv[argv.firstIndex(of: "--mem")! + 1])
@@ -332,7 +345,7 @@ if argv.count > 1 {
     lunarCmd.waitUntilExit()
     print("\u{001B}[0;0m", terminator: "")
 } else {
-    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--logAddons] [--downloadOnly]\nPass --help for more information\n", stderr)
+    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly]\nPass --help for more information\n", stderr)
     exit(-1)
 }
 func prase(string: String, key: String) -> [String] {
