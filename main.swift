@@ -117,7 +117,7 @@ func downloadVersionData(branch: String) {
 }
 if argv.count > 1 {
     if argv.contains("-h") || argv.contains("--help") {
-        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it")
+        print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn]\nArgument description:\n<version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script")
         exit(0)
     }
     // Argument checks below
@@ -151,7 +151,7 @@ if argv.count > 1 {
             exit(-1)
         }
     }
-   if argv.contains("--storageDir") {
+    if argv.contains("--storageDir") {
         if !argv.indices.contains(argv.firstIndex(of: "--storageDir")! + 1) {
             fputs("Error: --storageDir requires a storage directory to be specified\n", stderr)
             exit(-1)
@@ -305,16 +305,16 @@ if argv.count > 1 {
         }
         lunarCmd.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/")
         print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
-        if logAddons {
-            let pipe = Pipe()
-            let pipe1 = Pipe()
-            lunarCmd.standardOutput = pipe
-            lunarCmd.standardError = pipe1
-            let outHandle = pipe.fileHandleForReading
-            let outHandle1 = pipe1.fileHandleForReading
-            
-            outHandle.readabilityHandler = { pipe in
-                if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
+        let pipe = Pipe()
+        lunarCmd.standardOutput = pipe
+        let outHandle = pipe.fileHandleForReading
+        
+        outHandle.readabilityHandler = { pipe in
+            if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
+                if line.contains("Auth] No launcher open") && !line.contains("CHAT") && !argv.contains("--disablePythonSignIn") {
+                    startSignIn()
+                }
+                if logAddons {
                     let linee = line.components(separatedBy: " thread/INFO]: [CHAT] ")
                     let line = linee[linee.count - 1]
                     let print1 = "\u{001B}[0;0m" + line.replacingOccurrences(of: "§r", with: "\u{001B}[0;0m").replacingOccurrences(of: "§l", with: "\u{001B}[1m").replacingOccurrences(of: "§0", with: "\u{001B}[38;5;232m").replacingOccurrences(of: "§1", with: "\u{001B}[38;5;19m")
@@ -323,10 +323,17 @@ if argv.count > 1 {
                     let print4 = print3.replacingOccurrences(of: "§c", with: "\u{001B}[38;5;203m").replacingOccurrences(of: "§d", with: "\u{001B}[38;5;201m").replacingOccurrences(of: "§e", with: "\u{001B}[38;5;226m").replacingOccurrences(of: "§f", with: "\u{001B}[38;5;231m")
                     print(print4.replacingOccurrences(of: "/WARN]:", with: "\u{001B}[0;33m/WARN]:").replacingOccurrences(of: "/FATAL]:", with: "\u{001B}[0;31m/FATAL]:").replacingOccurrences(of: "/ERROR]:", with: "\u{001B}[0;31m/ERROR]:"), terminator:"")
                 } else {
-                    print("Error decoding data: \(pipe.availableData)")
+                    print(line, terminator:"")
                 }
+            } else {
+                print("Error decoding data: \(pipe.availableData)")
             }
-                        outHandle1.readabilityHandler = { pipe1 in
+        }
+        if logAddons {
+            let pipe1 = Pipe()
+            lunarCmd.standardError = pipe1
+            let outHandle1 = pipe1.fileHandleForReading
+            outHandle1.readabilityHandler = { pipe1 in
                 if let line = String(data: pipe1.availableData, encoding: String.Encoding.utf8) {
                     print("\u{001B}[0;0m\u{001B}[0;31m" + line, terminator:"")
                 } else {
@@ -349,7 +356,7 @@ if argv.count > 1 {
     lunarCmd.waitUntilExit()
     print("\u{001B}[0;0m", terminator: "")
 } else {
-    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly]\nPass --help for more information\n", stderr)
+    fputs("Error: not enough options\nusage: lunarcmd <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn]\nPass --help for more information\n", stderr)
     exit(-1)
 }
 func prase(string: String, key: String) -> [String] {
@@ -438,6 +445,37 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     while !dlJava1Done || !dlJava2Done || !dlJava3Done || !dlJava4Done {
         usleep(500000)
     }
+}
+func startSignIn() {
+    let signin = Process()
+    signin.executableURL = URL(fileURLWithPath: "/bin/sh")
+    signin.arguments = ["-c", "python3 \"$(dirname '\(ProcessInfo.processInfo.arguments.first!)')/../lib/lunarcmd/signin.py\""]
+    let pipe = Pipe()
+    signin.standardOutput = pipe
+    signin.standardError = pipe
+    let outHandle = pipe.fileHandleForReading
+    outHandle.readabilityHandler = { pipe in
+        if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
+            if line.contains("No such file or directory") {
+                fputs("\u{001b}[31;1mError: Could not find the Python sign in script.\u{001b}[0m\n", stderr)
+                return
+            }
+            if line.contains("ModuleNotFoundError") {
+                fputs("\u{001b}[31;1mError: You need Python modules `pywebview` and `procbridge` to use the Python sign in.\u{001b}[0m\n", stderr)
+                return
+            }
+            if line.contains("not found") {
+                fputs("\u{001b}[31;1mError: Python 3 is required to sign in.\u{001b}[0m\n", stderr)
+                return
+            }
+        }
+    }
+    do {
+        try signin.run()
+    } catch {
+        
+    }
+    print("\u{001b}[32;1mSign in should have failed. The sign in listener has been started, so you should be able to sign in now.\u{001b}[0m")
 }
 func getAssets(version: String) throws {
     let versions = try prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "id")
