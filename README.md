@@ -9,4 +9,4 @@ The SwiftyJSON.swift is from https://github.com/IBM-Swift/SwiftyJSON, with a few
 # Downloading
 To download, use the appropriate zip file from Releases. If on Linux, run the lunarcmd shell script, NOT the executable in bin/. This will set the LD_LIBRARY_PATH variable correctly so you don't get missing library errors.
 # Signing in
-If you can't sign in to your Microsoft account, try opening the official Lunar Client launcher and signing in again. This is because the Launcher needs to be opened to sign in. After you sign in once, you should stay signed in.
+You will need Python 3 and the Python modules [pywebview](https://pypi.org/project/pywebview/) and [procbridge](https://pypi.org/project/procbridge/) to sign in. When it says that you need to have the launcher open, a window should appear and then disappear after a few seconds. After it disappears, click the sign in button again and you should be able to sign in. Alternatively, you can open the Lunar Client launcher when signing in.
