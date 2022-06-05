@@ -8,6 +8,24 @@ import Foundation
 #if os(Linux)
 import FoundationNetworking
 #endif
+signal(SIGILL) { s in
+    print("Please report this crash at https://github.com/GameParrot/lunarcmd/issues and include the following information:")
+    print(Thread.callStackSymbols.joined(separator: "\n"))
+    print("Exit code:", s)
+    exit(s)
+}
+signal(SIGABRT) { s in
+    print("Please report this crash at https://github.com/GameParrot/lunarcmd/issues and include the following information:")
+    print(Thread.callStackSymbols.joined(separator: "\n"))
+    print("Exit code:", s)
+    exit(s)
+}
+signal(SIGSEGV) { s in
+    print("Please report this crash at https://github.com/GameParrot/lunarcmd/issues and include the following information:")
+    print(Thread.callStackSymbols.joined(separator: "\n"))
+    print("Exit code:", s)
+    exit(s)
+}
 #if os(Linux)
 let os = "linux"
 let osstring = "linux"
@@ -195,10 +213,6 @@ if argv.count > 1 {
     }
     print("Downloading Lunar assets...")
     downloadVersionData(branch:  branch)
-    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])") {
-        fputs("Error: version is invalid or it has never been launched before in Lunar Client\n", stderr)
-        exit(-1)
-    }
     if argv.contains("--gameDir") {
         gameDir = URL(fileURLWithPath: argv[argv.firstIndex(of: "--gameDir")! + 1]).path // Sets the game directory to the --gameDir argument value if specified
     }
