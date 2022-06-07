@@ -93,15 +93,16 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
     }
 }
 func downloadVersionData(branch: String) {
-    let json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.10.1", "version": "\(argv[1])", "branch": branch, "launch_type": "0", "classifier": "0"]
-    
+    var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "null", "version": "\(argv[1])", "branch": branch, "launch_type": "0", "classifier": "0"]
+    if argv.contains("--no-optifine") {
+        json["module"] =  "lunar-noOF"
+    }
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     
     // create post request
     let url = URL(string: "https://api.lunarclientprod.com/launcher/launch")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
-    
     // insert json data to the request
     request.httpBody = jsonData
     var responseData = "".data(using: .utf8)
