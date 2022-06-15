@@ -34,10 +34,10 @@ let os = "darwin"
 let osstring = "macos"
 #endif
 #if arch(x86_64)
-let arch = "x64"
-#else
-fputs("Unsupported CPU arch\n", stderr)
-exit(-1)
+let arch = "arm64"
+#endif
+#if arch(arm64)
+let arch = "arm64"
 #endif
 setbuf(stdout, nil)
 setbuf(stderr, nil)
@@ -78,14 +78,14 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
     }
 }
 func downloadJre(jreurl: String) throws { // Function for downloading Java runtime
-    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])") {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])"), withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])"), withIntermediateDirectories: true)
         let data = try Data(contentsOf: URL(string: jreurl)!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
         let tarex = Process()
         tarex.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
         tarex.arguments = ["-xf", "/tmp/jre.tar.gz"]
-        tarex.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre/\(argv[1])")
+        tarex.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])")
         try tarex.run() // Extracts the tar.gz archive
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
@@ -126,8 +126,8 @@ func downloadVersionData(branch: String) {
     do {
         try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
-        if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives") {
-            unzip(zip: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip", to: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives")
+        if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives_\(arch)") {
+            unzip(zip: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip", to: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives_\(arch)")
         }
         try downloadJre(jreurl: jsonresponse["jre"]["download"]["url"].string!)
         try downloadLicenses(licenses: jsonresponse["licenses"])
@@ -243,7 +243,7 @@ if argv.count > 1 {
     print("Preparing to launch Lunar Client \(argv[1])")
     let lunarCmd = Process()
     do {
-        let jreVersionPath = homeDir + "/.lunarcmd_data/jre/\(argv[1])" // Sets the path to the Java folder
+        let jreVersionPath = homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])" // Sets the path to the Java folder
         if javaExec == "default" {
             try lunarCmd.executableURL = URL(fileURLWithPath: jreVersionPath + "/" + FileManager.default.contentsOfDirectory(atPath: jreVersionPath)[0] + "/bin/java")
         } else {
@@ -264,7 +264,7 @@ if argv.count > 1 {
         lunarCmd.arguments?.append("jdk.naming.dns")
         lunarCmd.arguments?.append("--add-exports")
         lunarCmd.arguments?.append("jdk.naming.dns/com.sun.jndi.dns=java.naming")
-        lunarCmd.arguments?.append("-Djna.boot.library.path=natives")
+        lunarCmd.arguments?.append("-Djna.boot.library.path=natives_\(arch)")
         lunarCmd.arguments?.append("--add-opens")
         lunarCmd.arguments?.append("java.base/java.io=ALL-UNNAMED")
         lunarCmd.arguments?.append("-cp")
@@ -287,7 +287,7 @@ if argv.count > 1 {
             lunarCmd.arguments?.append("-Xms" + argv[argv.firstIndex(of: "--mem")! + 1])
             lunarCmd.arguments?.append("-Xmx" + argv[argv.firstIndex(of: "--mem")! + 1])
         }
-        lunarCmd.arguments?.append("-Djava.library.path=natives") // Sets more JVM args
+        lunarCmd.arguments?.append("-Djava.library.path=natives_\(arch)") // Sets more JVM args
         lunarCmd.arguments?.append("-XX:+DisableAttachMechanism")
         if os == "darwin" {
             lunarCmd.arguments?.append("-Dapple.awt.application.appearance=system")
