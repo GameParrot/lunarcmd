@@ -34,7 +34,7 @@ let os = "darwin"
 let osstring = "macos"
 #endif
 #if arch(x86_64)
-let arch = "arm64"
+let arch = "x86_64"
 #endif
 #if arch(arm64)
 let arch = "arm64"
