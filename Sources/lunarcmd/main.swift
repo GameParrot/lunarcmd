@@ -8,6 +8,8 @@ import Foundation
 #if os(Linux)
 import FoundationNetworking
 #endif
+import SwiftyJSON
+import ZIPFoundation
 signal(SIGILL) { s in
     print("Please report this crash at https://github.com/GameParrot/lunarcmd/issues and include the following information:")
     print(Thread.callStackSymbols.joined(separator: "\n"))
@@ -52,17 +54,6 @@ let dlqueue5 = DispatchQueue(label: "com.gameparrot.DownloadThread5")
 let dlqueue6 = DispatchQueue(label: "com.gameparrot.DownloadThread6")
 let dlqueue7 = DispatchQueue(label: "com.gameparrot.DownloadThread7")
 let dlqueue8 = DispatchQueue(label: "com.gameparrot.DownloadThread8")
-func unzip(zip: String, to: String) { // Function for unzipping
-    let taskunzip = Process()
-    taskunzip.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-    taskunzip.arguments = [zip, "-d", to]
-    do {
-        try taskunzip.run()
-        taskunzip.waitUntilExit()
-    } catch {
-        
-    }
-}
 func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar Client licenses
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses"), withIntermediateDirectories: true)
@@ -80,6 +71,7 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
 func downloadJre(jreurl: String) throws { // Function for downloading Java runtime
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])"), withIntermediateDirectories: true)
+        #if os(Linux)
         let data = try Data(contentsOf: URL(string: jreurl)!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
         let tarex = Process()
@@ -89,6 +81,12 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
         try tarex.run() // Extracts the tar.gz archive
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
+        #else
+        let data = try Data(contentsOf: URL(string: jreurl.replacingOccurrences(of: ".tar.gz", with: ".zip"))!)
+        try data.write(to: URL(fileURLWithPath: "/tmp/jre.zip"))
+        try FileManager.default.unzipItem(at: URL(fileURLWithPath: "/tmp/jre.zip"), to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])"))
+        try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.zip"))
+        #endif
         print("Downloaded Java")
     }
 }
@@ -97,6 +95,9 @@ func downloadVersionData(branch: String) {
     if argv.contains("--no-optifine") {
         json["module"] =  "lunar-noOF"
     }
+#if DEBUG
+    print("Request body: \(json)")
+#endif
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     
     // create post request
@@ -123,11 +124,14 @@ func downloadVersionData(branch: String) {
         fputs("Error: Could not get launch data\nResponse: \(jsonresponse)\n", stderr)
         exit(-1)
     }
+#if DEBUG
+    print("Launch response: \(jsonresponse)")
+    #endif
     do {
         try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
         if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives_\(arch)") {
-            unzip(zip: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip", to: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives_\(arch)")
+            try FileManager.default.unzipItem(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives-\(osstring)-\(arch).zip"), to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])/natives_\(arch)"))
         }
         try downloadJre(jreurl: jsonresponse["jre"]["download"]["url"].string!)
         try downloadLicenses(licenses: jsonresponse["licenses"])
@@ -272,6 +276,9 @@ if argv.count > 1 {
         for i in try FileManager.default.contentsOfDirectory(atPath: homeDir + "/.lunarcmd_data/offline/\(argv[1])") {
             if i.contains(".jar") || i.contains("optifine") {
                 repeatIndex+=1
+#if DEBUG
+                print("Added \(i) to classpath")
+                #endif
                 if repeatIndex != 1 {
                     classpath = classpath + ":" + i
                 } else {
@@ -399,6 +406,9 @@ func prase(string: String, key: String) -> [String] {
     }
     keys.remove(at: 0)
     keys.remove(at: 0)
+#if DEBUG
+    print("Found \(keys) in json")
+    #endif
     return keys
 }
 func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Lunar Client jars and natives
@@ -480,19 +490,68 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     }
 }
 func startSignIn() {
+    let signInScript = """
+import time
+import sys
+import procbridge as pb
+import webview
+import threading
+PORT = 28189
+url = ""
+hasranyet = False
+def webviewwaiter():
+    while not hasranyet:
+        time.sleep(0.5)
+    webviewcreate()
+def webviewwait():
+        print(window.get_current_url())
+        while not "?code=" in window.get_current_url():
+            time.sleep(0.1)
+        global url
+        url = window.get_current_url()
+def webviewcreate():
+    global window
+    window = webview.create_window("Sign in", "https://login.live.com/oauth20_authorize.srf?client_id=00000000402b5328&response_type=code&scope=service::user.auth.xboxlive.com::MBI_SSL&redirect_uri=https%3A%2F%2Flogin.live.com%2Foauth20_desktop.srf")
+    webview.start(func=webviewwait)
+def exitweb():
+    window.destroy()
+    exit(0)
+def delegate(method, payload):
+    global hasranyet
+    hasranyet = True
+    while url == "":
+        time.sleep(0.1)
+    thisdict = {
+      "status": "MATCHED_TARGET_URL",
+      "url": url
+    }
+    print(payload)
+    threading.Timer(2, exitweb).start()
+    return thisdict
+def webviewsignoutwait():
+        print(window.get_current_url())
+        while not "msn.com" in window.get_current_url():
+            time.sleep(0.1)
+        window.hide()
+        window.destroy()
+
+if __name__ == "__main__":
+    window = webview.create_window("Sign in again", "https://login.live.com/logout.srf")
+    webview.start(func=webviewsignoutwait)
+    s = pb.Server("0.0.0.0", PORT, delegate)
+    s.start(daemon=True)
+    print("Signin Server is on {}...".format(PORT))
+    webviewwaiter()
+"""
     let signin = Process()
     signin.executableURL = URL(fileURLWithPath: "/bin/sh")
-    signin.arguments = ["-c", "python3 \"$(dirname '\(ProcessInfo.processInfo.arguments.first!)')/../lib/lunarcmd/signin.py\""]
+    signin.arguments = ["-c", "echo '\(signInScript)' | python3"]
     let pipe = Pipe()
     signin.standardOutput = pipe
     signin.standardError = pipe
     let outHandle = pipe.fileHandleForReading
     outHandle.readabilityHandler = { pipe in
         if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
-            if line.contains("No such file or directory") {
-                fputs("\u{001b}[31;1mError: Could not find the Python sign in script.\u{001b}[0m\n", stderr)
-                return
-            }
             if line.contains("ModuleNotFoundError") {
                 fputs("\u{001b}[31;1mError: You need Python modules `pywebview` and `procbridge` to use the Python sign in.\u{001b}[0m\n", stderr)
                 return

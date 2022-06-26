@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftyJSON",
+        "repositoryURL": "https://github.com/FreeApp2014/SwiftyJSON",
+        "state": {
+          "branch": null,
+          "revision": "c796902a0496dc2808d21314a96f06e32844ee30",
+          "version": "17.0.7"
+        }
+      },
+      {
+        "package": "ZIPFoundation",
+        "repositoryURL": "https://github.com/weichsel/ZIPFoundation",
+        "state": {
+          "branch": null,
+          "revision": "7254c74b49cec2cb81520523ba993c671f71b066",
+          "version": "0.9.14"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
