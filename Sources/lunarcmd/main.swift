@@ -71,7 +71,7 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
 func downloadJre(jreurl: String) throws { // Function for downloading Java runtime
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])"), withIntermediateDirectories: true)
-        #if os(Linux)
+#if os(Linux)
         let data = try Data(contentsOf: URL(string: jreurl)!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
         let tarex = Process()
@@ -81,12 +81,12 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
         try tarex.run() // Extracts the tar.gz archive
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
-        #else
+#else
         let data = try Data(contentsOf: URL(string: jreurl.replacingOccurrences(of: ".tar.gz", with: ".zip"))!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.zip"))
         try FileManager.default.unzipItem(at: URL(fileURLWithPath: "/tmp/jre.zip"), to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(argv[1])"))
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.zip"))
-        #endif
+#endif
         print("Downloaded Java")
     }
 }
@@ -126,7 +126,7 @@ func downloadVersionData(branch: String) {
     }
 #if DEBUG
     print("Launch response: \(jsonresponse)")
-    #endif
+#endif
     do {
         try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
@@ -278,7 +278,7 @@ if argv.count > 1 {
                 repeatIndex+=1
 #if DEBUG
                 print("Added \(i) to classpath")
-                #endif
+#endif
                 if repeatIndex != 1 {
                     classpath = classpath + ":" + i
                 } else {
@@ -408,7 +408,7 @@ func prase(string: String, key: String) -> [String] {
     keys.remove(at: 0)
 #if DEBUG
     print("Found \(keys) in json")
-    #endif
+#endif
     return keys
 }
 func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Lunar Client jars and natives
