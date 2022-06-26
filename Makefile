@@ -29,6 +29,5 @@ endif
 install:
 	-mkdir "$(prefix)/bin"
 	cp ./bin/* "$(prefix)/bin/"
-	cp -R ./lib/* "$(prefix)/lib/"
 	@echo "\033[32;1mSuccessfully installed lunarcmd\033[0m"
 	
