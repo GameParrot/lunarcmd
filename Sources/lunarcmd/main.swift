@@ -470,7 +470,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
         dlJava3Done = true
     }
     
-    dlqueue2.async {
+    dlqueue4.async {
         do {
             for i in (dlJava3List + 1)...dlJava4List {
                 if artifacts[i]["url"].string != nil {
