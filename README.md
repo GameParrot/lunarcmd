@@ -1,7 +1,7 @@
 # lunarcmd
 LunarCmd will launch Lunar Client from the command line.
 # Usage
-To start with default settings run `lunarcmd <lunar_version>`. lunar_version can be any Lunar Client version (ex: 1.8)
+To start with default settings run `lunarcmd <lunar_version>`. lunar_version can be any Lunar Client version (ex: 1.8.9)
 # Building
 To build, run `make`. To install after building, run `sudo make install`. You will need to have Swift installed to build.
 # Downloading
