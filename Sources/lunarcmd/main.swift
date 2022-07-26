@@ -103,6 +103,7 @@ func downloadVersionData(branch: String) {
             availableVersions.append(availableVersionDataJSON["versions"][i - 1]["id"].string ?? "")
         }
         if noVersionPassed {
+            print("Available Versions:")
             for i in 1...availableVersions.count {
                 print("\(i): \(availableVersions[i - 1])")
             }
@@ -122,6 +123,7 @@ func downloadVersionData(branch: String) {
     } catch {
         fputs("Could not get available versions\n", stderr)
     }
+    print("Downloading Lunar assets...")
     var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "null", "version": "\(versionLaunching)", "branch": branch, "launch_type": "0", "classifier": "0"]
     if argv.contains("--no-optifine") {
         json["module"] =  "lunar-noOF"
@@ -257,7 +259,6 @@ var branch = "master"
 if argv.contains("--branch") {
     branch = argv[argv.firstIndex(of: "--branch")! + 1]
 }
-print("Downloading Lunar assets...")
 downloadVersionData(branch:  branch)
 if argv.contains("--gameDir") {
     gameDir = URL(fileURLWithPath: argv[argv.firstIndex(of: "--gameDir")! + 1]).path // Sets the game directory to the --gameDir argument value if specified
