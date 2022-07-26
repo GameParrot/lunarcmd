@@ -114,10 +114,10 @@ func downloadVersionData(branch: String) {
                 exit(-1)
             }
         } else {
-        if !availableVersions.contains(versionLaunching) {
-            fputs("Error: Version \(versionLaunching) is unavailable. Available versions: \(availableVersions)\n", stderr)
-            exit(-1)
-        }
+            if !availableVersions.contains(versionLaunching) {
+                fputs("Error: Version \(versionLaunching) is unavailable. Available versions: \(availableVersions)\n", stderr)
+                exit(-1)
+            }
         }
     } catch {
         fputs("Could not get available versions\n", stderr)
@@ -191,7 +191,7 @@ if argv.contains("--version") {
         versionLaunching = argv[argv.firstIndex(of: "--version")! + 1]
     }
 } else {
-noVersionPassed = true
+    noVersionPassed = true
 }
 if argv.contains("--quitOnLeave") {
     if !argv.contains("--server") {
@@ -464,6 +464,9 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)"), withIntermediateDirectories: true)
     }
+    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1") {
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1"), withIntermediateDirectories: true)
+    }
     var dlJava1Done = false
     var dlJava2Done = false
     var dlJava3Done = false
@@ -476,12 +479,16 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
         do {
             for i in 0...dlJava1List {
                 if artifacts[i]["url"].string != nil {
-                    let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
+                    if prevsha1 != artifacts[i]["sha1"].string! {
+                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
+                        print("Downloaded JAR:", artifacts[i]["name"].string!)
+                    }
                     if artifacts[i]["name"].string!.contains("natives") {
                         nativesFile = artifacts[i]["name"].string!
                     }
-                    print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
         } catch {
@@ -495,12 +502,16 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
         do {
             for i in (dlJava1List + 1)...dlJava2List {
                 if artifacts[i]["url"].string != nil {
-                    let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
+                    if prevsha1 != artifacts[i]["sha1"].string! {
+                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
+                        print("Downloaded JAR:", artifacts[i]["name"].string!)
+                    }
                     if artifacts[i]["name"].string!.contains("natives") {
                         nativesFile = artifacts[i]["name"].string!
                     }
-                    print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
         } catch {
@@ -513,12 +524,16 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
         do {
             for i in (dlJava2List + 1)...dlJava3List {
                 if artifacts[i]["url"].string != nil {
-                    let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
+                    if prevsha1 != artifacts[i]["sha1"].string! {
+                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
+                        print("Downloaded JAR:", artifacts[i]["name"].string!)
+                    }
                     if artifacts[i]["name"].string!.contains("natives") {
                         nativesFile = artifacts[i]["name"].string!
                     }
-                    print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
         } catch {
@@ -532,12 +547,16 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
         do {
             for i in (dlJava3List + 1)...dlJava4List {
                 if artifacts[i]["url"].string != nil {
-                    let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
+                    if prevsha1 != artifacts[i]["sha1"].string! {
+                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
+                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
+                        print("Downloaded JAR:", artifacts[i]["name"].string!)
+                    }
                     if artifacts[i]["name"].string!.contains("natives") {
                         nativesFile = artifacts[i]["name"].string!
                     }
-                    print("Downloaded JAR:", artifacts[i]["name"].string!)
                 }
             }
         } catch {
