@@ -334,7 +334,7 @@ do {
             repeatIndex+=1
             if i.contains("OptiFine_v1") {
                 optifine = i
-            }
+            } else {
 #if DEBUG
             print("Added \(i) to classpath")
 #endif
@@ -342,6 +342,7 @@ do {
                 classpath = classpath + ":" + i
             } else {
                 classpath = classpath + i
+            }
             }
         }
     }
