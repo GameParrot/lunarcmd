@@ -10,6 +10,9 @@ import FoundationNetworking
 #endif
 import SwiftyJSON
 import ZIPFoundation
+#if DEBUG
+
+#else
 signal(SIGILL) { s in
     print("Please report this crash at https://github.com/GameParrot/lunarcmd/issues and include the following information:")
     print(Thread.callStackSymbols.joined(separator: "\n"))
@@ -28,6 +31,7 @@ signal(SIGSEGV) { s in
     print("Exit code:", s)
     exit(s)
 }
+#endif
 #if os(Linux)
 let os = "linux"
 let osstring = "linux"
@@ -65,7 +69,7 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
     for i in 0...licenses.count {
         if licenses[i]["url"].string != nil {
             if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
-                let data = try Data(contentsOf: URL(string: licenses[i]["url"].string!)!)
+                let data = try Data(contentsOf: URL(string: licenses[i]["url"].string!.replacingOccurrences(of: " ", with: "%20"))!)
                 try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
                 print("Downloaded license:", licenses[i]["file"].string!)
             }
