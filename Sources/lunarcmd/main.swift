@@ -124,7 +124,20 @@ func downloadVersionData(branch: String) {
         fputs("Could not get available versions\n", stderr)
     }
     print("Downloading Lunar assets...")
-    var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "null", "version": "\(versionLaunching)", "branch": branch, "launch_type": "0", "classifier": "0"]
+    let kernelVersionTask = Process()
+    #if os(macOS)
+    kernelVersionTask.executableURL = URL(fileURLWithPath: "/usr/bin/uname")
+    #else
+    kernelVersionTask.executableURL = URL(fileURLWithPath: "/bin/uname")
+    #endif
+    kernelVersionTask.arguments = ["-r"]
+    let kernelVersionPipe = Pipe()
+    kernelVersionTask.standardOutput = kernelVersionPipe
+    try? kernelVersionTask.run()
+    kernelVersionTask.waitUntilExit()
+    let kernelVersionData = kernelVersionPipe.fileHandleForReading.readDataToEndOfFile()
+    let kernelVersion = String(data: kernelVersionData, encoding: String.Encoding.utf8) ?? "0.0.0"
+    var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.12.7", "version": "\(versionLaunching)", "branch": branch, "classifier": "0", "module": "lunar", "os_release": kernelVersion]
     if argv.contains("--no-optifine") {
         json["module"] =  "lunar-noOF"
     }
