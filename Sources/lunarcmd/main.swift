@@ -137,7 +137,7 @@ func downloadVersionData(branch: String) {
     kernelVersionTask.waitUntilExit()
     let kernelVersionData = kernelVersionPipe.fileHandleForReading.readDataToEndOfFile()
     let kernelVersion = String(data: kernelVersionData, encoding: String.Encoding.utf8) ?? "0.0.0"
-    var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.12.7", "version": "\(versionLaunching)", "branch": branch, "classifier": "0", "module": "lunar", "os_release": kernelVersion]
+    var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.12.7", "version": "\(versionLaunching)", "branch": branch, "classifier": "0", "module": "lunar", "os_release": kernelVersion, "launch_type": "OFFLINE"]
     if argv.contains("--no-optifine") {
         json["module"] =  "lunar-noOF"
     }
