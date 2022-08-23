@@ -9,7 +9,59 @@ import Foundation
 import FoundationNetworking
 #endif
 import SwiftyJSON
+extension String: Error {}
 import ZIPFoundation
+func dataDownload(url: URL) throws -> Data {
+    var finished = false
+    var download = Data.init()
+    var errorr: Error?  = nil
+    let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
+        if error != nil {
+            errorr = error
+            finished = true
+        }
+        guard let data = data else { return }
+        download = data
+        finished = true
+    }
+    task.resume()
+    
+    while finished == false {
+        usleep(50)
+    }
+    if errorr != nil {
+        throw errorr!
+    }
+    return download
+}
+func stringDownload(url: URL) throws -> String {
+    var finished = false
+    var download: String? = ""
+    var errorr: Error?  = nil
+    let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
+        if error != nil {
+            errorr = error
+            finished = true
+        }
+        
+        guard let data = data else { return }
+        download = String(data: data, encoding: .utf8)
+        if download == nil {
+            errorr = "Response is not a valid string"
+            finished = true
+        }
+        finished = true
+    }
+    task.resume()
+    
+    while finished == false {
+        usleep(50)
+    }
+    if errorr != nil {
+        throw errorr!
+    }
+    return download!
+}
 #if DEBUG
 
 #else
@@ -47,18 +99,11 @@ let arch = "arm64"
 #endif
 setbuf(stdout, nil)
 setbuf(stderr, nil)
+var max_threads = 8
 var nativesFile = "natives-\(osstring)-\(arch).zip"
 let argv = CommandLine.arguments // Sets a variable to the arguments
 let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
 var gameDir = FileManager.default.currentDirectoryPath + "/lunarcmd"
-let dlqueue1 = DispatchQueue(label: "com.gameparrot.DownloadThread1")
-let dlqueue2 = DispatchQueue(label: "com.gameparrot.DownloadThread2")
-let dlqueue3 = DispatchQueue(label: "com.gameparrot.DownloadThread3")
-let dlqueue4 = DispatchQueue(label: "com.gameparrot.DownloadThread4")
-let dlqueue5 = DispatchQueue(label: "com.gameparrot.DownloadThread5")
-let dlqueue6 = DispatchQueue(label: "com.gameparrot.DownloadThread6")
-let dlqueue7 = DispatchQueue(label: "com.gameparrot.DownloadThread7")
-let dlqueue8 = DispatchQueue(label: "com.gameparrot.DownloadThread8")
 var mainClass = "com.moonsworth.lunar.patcher.LunarMain"
 var versionLaunching = ""
 var noVersionPassed = false
@@ -66,21 +111,37 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses"), withIntermediateDirectories: true)
     }
-    for i in 0...licenses.count {
-        if licenses[i]["url"].string != nil {
-            if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
-                let data = try Data(contentsOf: URL(string: licenses[i]["url"].string!.replacingOccurrences(of: " ", with: "%20"))!)
-                try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
-                print("Downloaded license:", licenses[i]["file"].string!)
+    var threads3 = 0
+    for i in 0...(licenses.count - 1) {
+        let dlqueue3 = DispatchQueue(label: "dllis")
+        dlqueue3.async {
+            threads3+=1
+            do {
+                if licenses[i]["url"].string != nil {
+                    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!) {
+                        let data = try dataDownload(url: URL(string: licenses[i]["url"].string!.replacingOccurrences(of: " ", with: "%20"))!)
+                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/licenses/" + licenses[i]["file"].string!))
+                        print("Downloaded license:", licenses[i]["file"].string!)
+                    }
+                }
+            } catch {
+                
             }
+            threads3-=1
         }
+        usleep(50)
+        while threads3 >= max_threads {
+            usleep(20)
+        }
+        usleep(50)
     }
 }
 func downloadJre(jreurl: String) throws { // Function for downloading Java runtime
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(versionLaunching)") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(versionLaunching)"), withIntermediateDirectories: true)
+        print("Started Java download")
 #if os(Linux)
-        let data = try Data(contentsOf: URL(string: jreurl)!)
+        let data = try dataDownload(url: URL(string: jreurl)!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
         let tarex = Process()
         tarex.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
@@ -90,7 +151,7 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
         tarex.waitUntilExit()
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.tar.gz"))
 #else
-        let data = try Data(contentsOf: URL(string: jreurl.replacingOccurrences(of: ".tar.gz", with: ".zip"))!)
+        let data = try dataDownload(url: URL(string: jreurl.replacingOccurrences(of: ".tar.gz", with: ".zip"))!)
         try data.write(to: URL(fileURLWithPath: "/tmp/jre.zip"))
         try FileManager.default.unzipItem(at: URL(fileURLWithPath: "/tmp/jre.zip"), to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/jre_\(arch)/\(versionLaunching)"))
         try FileManager.default.removeItem(at: URL(fileURLWithPath: "/tmp/jre.zip"))
@@ -101,7 +162,7 @@ func downloadJre(jreurl: String) throws { // Function for downloading Java runti
 func downloadVersionData(branch: String) {
     do {
         var availableVersions: [String] = []
-        let availableVersionData = try Data(contentsOf: URL(string: "https://api.lunarclientprod.com/launcher/metadata")!)
+        let availableVersionData = try dataDownload(url: URL(string: "https://api.lunarclientprod.com/launcher/metadata")!)
         let availableVersionDataJSON = JSON(data: availableVersionData)
         for i in 1...availableVersionDataJSON["versions"].count {
             availableVersions.append(availableVersionDataJSON["versions"][i - 1]["id"].string ?? "")
@@ -129,11 +190,11 @@ func downloadVersionData(branch: String) {
     }
     print("Downloading Lunar assets...")
     let kernelVersionTask = Process()
-    #if os(macOS)
+#if os(macOS)
     kernelVersionTask.executableURL = URL(fileURLWithPath: "/usr/bin/uname")
-    #else
+#else
     kernelVersionTask.executableURL = URL(fileURLWithPath: "/bin/uname")
-    #endif
+#endif
     kernelVersionTask.arguments = ["-r"]
     let kernelVersionPipe = Pipe()
     kernelVersionTask.standardOutput = kernelVersionPipe
@@ -178,7 +239,7 @@ func downloadVersionData(branch: String) {
     print("Launch response: \(jsonresponse)")
 #endif
     do {
-        try getLunarAssets(index: try String(contentsOf: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
+        try getLunarAssets(index: try stringDownload(url: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
         mainClass = jsonresponse["launchTypeData"]["mainClass"].string ?? "com.moonsworth.lunar.patcher.LunarMain"
         if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/natives_\(arch)") {
@@ -192,7 +253,7 @@ func downloadVersionData(branch: String) {
     }
 }
 if argv.contains("-h") || argv.contains("--help") {
-    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine]\nArgument description:\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF")
+    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine] [--max-threads]\nArgument description:\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF\n--max-threads - Sets the max number of threads for downloading (Default: 8)")
     exit(0)
 }
 // Argument checks below
@@ -200,6 +261,22 @@ if argv.contains("--server") {
     if !argv.indices.contains(argv.firstIndex(of: "--server")! + 1) {
         fputs("Error: --server requires a server to be specified\n", stderr)
         exit(-1)
+    }
+}
+if argv.contains("--max-threads") {
+    if !argv.indices.contains(argv.firstIndex(of: "--max-threads")! + 1) {
+        fputs("Error: --max-threads requires a number to be specified\n", stderr)
+        exit(-1)
+    } else {
+        max_threads = Int(argv[argv.firstIndex(of: "--max-threads")! + 1]) ?? 8
+        if max_threads < 1 {
+            fputs("Error: --max-threads should be above 0\n", stderr)
+            exit(-1)
+        }
+        if max_threads > 127 {
+            fputs("Error: --max-threads should be below 128\n", stderr)
+            exit(-1)
+        }
     }
 }
 if argv.contains("--version") {
@@ -340,13 +417,13 @@ do {
                 optifine = i
             } else {
 #if DEBUG
-            print("Added \(i) to classpath")
+                print("Added \(i) to classpath")
 #endif
-            if repeatIndex != 1 {
-                classpath = classpath + ":" + i
-            } else {
-                classpath = classpath + i
-            }
+                if repeatIndex != 1 {
+                    classpath = classpath + ":" + i
+                } else {
+                    classpath = classpath + i
+                }
             }
         }
     }
@@ -486,21 +563,17 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1"), withIntermediateDirectories: true)
     }
-    var dlJava1Done = false
-    var dlJava2Done = false
-    var dlJava3Done = false
-    var dlJava4Done = false
-    let dlJava1List = artifacts.count / 4
-    let dlJava2List = artifacts.count / 2
-    let dlJava3List = (artifacts.count / 2) + (artifacts.count / 4)
-    let dlJava4List = artifacts.count
-    dlqueue1.async {
-        do {
-            for i in 0...dlJava1List {
+    var threads2 = 0
+    var downloadsLeft2 = artifacts.count
+    for i in 0...(artifacts.count - 1) {
+        let dlqueue2 = DispatchQueue(label: "dljar")
+        dlqueue2.async {
+            threads2+=1
+            do {
                 if artifacts[i]["url"].string != nil {
                     let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
                     if prevsha1 != artifacts[i]["sha1"].string! {
-                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
+                        let data = try dataDownload(url: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
                         try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
                         try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
                         print("Downloaded JAR:", artifacts[i]["name"].string!)
@@ -509,83 +582,20 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
                         nativesFile = artifacts[i]["name"].string!
                     }
                 }
+            } catch {
+                
             }
-        } catch {
-            fputs("Could not get launch data\n\(error)\n", stderr)
-            exit(-1)
+            threads2-=1
+            downloadsLeft2-=1
         }
-        dlJava1Done = true
-    }
-    
-    dlqueue2.async {
-        do {
-            for i in (dlJava1List + 1)...dlJava2List {
-                if artifacts[i]["url"].string != nil {
-                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
-                    if prevsha1 != artifacts[i]["sha1"].string! {
-                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
-                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
-                        print("Downloaded JAR:", artifacts[i]["name"].string!)
-                    }
-                    if artifacts[i]["name"].string!.contains("natives") {
-                        nativesFile = artifacts[i]["name"].string!
-                    }
-                }
-            }
-        } catch {
-            fputs("Could not get launch data\n\(error)\n", stderr)
-            exit(-1)
+        usleep(50)
+        while threads2 >= max_threads {
+            usleep(20)
         }
-        dlJava2Done = true
+        usleep(50)
     }
-    dlqueue3.async {
-        do {
-            for i in (dlJava2List + 1)...dlJava3List {
-                if artifacts[i]["url"].string != nil {
-                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
-                    if prevsha1 != artifacts[i]["sha1"].string! {
-                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
-                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
-                        print("Downloaded JAR:", artifacts[i]["name"].string!)
-                    }
-                    if artifacts[i]["name"].string!.contains("natives") {
-                        nativesFile = artifacts[i]["name"].string!
-                    }
-                }
-            }
-        } catch {
-            fputs("Could not get launch data\n\(error)\n", stderr)
-            exit(-1)
-        }
-        dlJava3Done = true
-    }
-    
-    dlqueue4.async {
-        do {
-            for i in (dlJava3List + 1)...dlJava4List {
-                if artifacts[i]["url"].string != nil {
-                    let prevsha1 = try? String(contentsOfFile: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1")
-                    if prevsha1 != artifacts[i]["sha1"].string! {
-                        let data = try Data(contentsOf: URL(string: artifacts[i]["url"].string!)!) // Downloads the file
-                        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/" + artifacts[i]["name"].string!))
-                        try? artifacts[i]["sha1"].string!.data(using: .utf8)?.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/sha1/\(artifacts[i]["name"].string!).sha1"))
-                        print("Downloaded JAR:", artifacts[i]["name"].string!)
-                    }
-                    if artifacts[i]["name"].string!.contains("natives") {
-                        nativesFile = artifacts[i]["name"].string!
-                    }
-                }
-            }
-        } catch {
-            fputs("Could not get launch data\n\(error)\n", stderr)
-            exit(-1)
-        }
-        dlJava4Done = true
-    }
-    while !dlJava1Done || !dlJava2Done || !dlJava3Done || !dlJava4Done {
-        usleep(500000)
+    while downloadsLeft2 > 1 {
+        usleep(500)
     }
 }
 func startSignIn() {
@@ -669,302 +679,78 @@ if __name__ == "__main__":
     print("\u{001b}[32;1mSign in should have failed. The sign in listener has been started, so you should be able to sign in now.\u{001b}[0m")
 }
 func getAssets(version: String) throws {
-    let versions = try prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "id")
-    let jsons = try prase(string: String(contentsOf: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "url")
-    let jsonData = try String(contentsOf: URL(string: jsons[versions.firstIndex(of: version)!])!)
+    let versions = try prase(string: stringDownload(url: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "id")
+    let jsons = try prase(string: stringDownload(url: URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!), key: "url")
+    let jsonData = try stringDownload(url: URL(string: jsons[versions.firstIndex(of: version)!])!)
     let assetIndex = prase(string: jsonData, key: "url")[0]
     if !FileManager.default.fileExists(atPath: gameDir + "/assets/indexes/") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/indexes"), withIntermediateDirectories: true)
     }
     if !FileManager.default.fileExists(atPath: gameDir + "/assets/indexes/" + version + ".json") {
-        try Data(contentsOf: URL(string: assetIndex)!).write(to: URL(fileURLWithPath: gameDir + "/assets/indexes/" + version + ".json")) // Downloads the asset and saves it
+        try dataDownload(url: URL(string: assetIndex)!).write(to: URL(fileURLWithPath: gameDir + "/assets/indexes/" + version + ".json")) // Downloads the asset and saves it
     }
-    let hashes = try prase(string: String(contentsOf: URL(string: assetIndex)!), key: "hash")
-    let hashcount = hashes.count - 1
-    var dlMcAssets1Done = false
-    var dlMcAssets2Done = false
-    var dlMcAssets3Done = false
-    var dlMcAssets4Done = false
-    var dlMcAssets5Done = false
-    var dlMcAssets6Done = false
-    var dlMcAssets7Done = false
-    var dlMcAssets8Done = false
-    let dlMcAssets1List = (hashcount / 8) - 1
-    let dlMcAssets2List = (hashcount / 4) - 1
-    let dlMcAssets3List = ((hashcount / 4) + (hashcount / 8) - 1)
-    let dlMcAssets4List = (hashcount / 2) - 1
-    let dlMcAssets5List = ((hashcount / 2) + (hashcount / 8) - 1)
-    let dlMcAssets6List = ((hashcount / 2) + (hashcount / 4)) - 1
-    let dlMcAssets7List = ((hashcount / 2) + (hashcount / 4) + (hashcount / 8)) - 1
-    let dlMcAssets8List = hashcount - 1
-    dlqueue1.async {
-        for i in 0...dlMcAssets1List {
+    let hashes = try prase(string: stringDownload(url: URL(string: assetIndex)!), key: "hash")
+    var threads = 0
+    var downloadsLeft = hashes.count
+    for i in 0...(hashes.count - 1) {
+        let dlqueue1 = DispatchQueue(label: "dlmc")
+        dlqueue1.async {
+            threads+=1
             do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
+                let first2hash = String(hashes[i].prefix(2))
+                if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
+                    try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
+                    try dataDownload(url: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
+                    print("Downloaded asset:", hashes[i])
                 }
-            }
-        }
-        dlMcAssets1Done = true
-    }
-    dlqueue2.async {
-        for i in (dlMcAssets1List + 1)...dlMcAssets2List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
             } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
+                print(error)
             }
+            threads-=1
+            downloadsLeft-=1
         }
-        dlMcAssets2Done = true
-    }
-    dlqueue3.async {
-        for i in (dlMcAssets2List + 1)...dlMcAssets3List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
+        usleep(50)
+        while threads >= max_threads {
+            usleep(20)
         }
-        dlMcAssets3Done = true
+        usleep(50)
     }
-    dlqueue4.async {
-        for i in (dlMcAssets3List + 1)...dlMcAssets4List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlMcAssets4Done = true
-    }
-    dlqueue5.async {
-        for i in (dlMcAssets4List + 1)...dlMcAssets5List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlMcAssets5Done = true
-    }
-    dlqueue6.async {
-        for i in (dlMcAssets5List + 1)...dlMcAssets6List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlMcAssets6Done = true
-    }
-    dlqueue7.async {
-        for i in (dlMcAssets6List + 1)...dlMcAssets7List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlMcAssets7Done = true
-    }
-    dlqueue8.async {
-        for i in (dlMcAssets7List + 1)...dlMcAssets8List {
-            do {
-                try downloadMcAsset(i: i, hashes: hashes)
-            } catch {
-                do {
-                    try downloadMcAsset(i: i, hashes: hashes)
-                } catch {
-                    fputs("Failed to download asset \(hashes[i])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlMcAssets8Done = true
-    }
-    while !dlMcAssets1Done || !dlMcAssets2Done || !dlMcAssets3Done || !dlMcAssets4Done || !dlMcAssets5Done || !dlMcAssets6Done || !dlMcAssets7Done || !dlMcAssets8Done {
-        usleep(500000)
+    while downloadsLeft > 30 {
+        usleep(500)
     }
 }
 func getLunarAssets(index: [String], base: String) throws { // Function for downloading Lunar assets
     if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures") {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures"), withIntermediateDirectories: true)
     }
-    var dlLAssets1Done = false
-    var dlLAssets2Done = false
-    var dlLAssets3Done = false
-    var dlLAssets4Done = false
-    var dlLAssets5Done = false
-    var dlLAssets6Done = false
-    var dlLAssets7Done = false
-    var dlLAssets8Done = false
-    let dlLAssets1List = (index.count / 8) - 1
-    let dlLAssets2List = (index.count / 4) - 1
-    let dlLAssets3List = ((index.count / 4) + (index.count / 8) - 1)
-    let dlLAssets4List = (index.count / 2) - 1
-    let dlLAssets5List = ((index.count / 2) + (index.count / 8) - 1)
-    let dlLAssets6List = ((index.count / 2) + (index.count / 4)) - 1
-    let dlLAssets7List = ((index.count / 2) + (index.count / 4) + (index.count / 8)) - 1
-    let dlLAssets8List = index.count - 1
-    dlqueue1.async {
-        for i in 0...dlLAssets1List {
+    var downloadsLeft1 = index.count
+    var threads1 = 0
+    for i in 0...(index.count - 1) {
+        let dlqueue = DispatchQueue(label: "dl")
+        dlqueue.async {
+            threads1+=1
             do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
+                if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
+                    if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
+                        try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
+                    }
+                    let data = try dataDownload(url: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
+                    try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
+                    print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
                 }
-            }
-        }
-        dlLAssets1Done = true
-    }
-    dlqueue2.async {
-        for i in (dlLAssets1List + 1)...dlLAssets2List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
             } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
+                print(error)
             }
+            downloadsLeft1-=1
+            threads1-=1
         }
-        
-        dlLAssets2Done = true
-    }
-    dlqueue3.async {
-        for i in (dlLAssets2List + 1)...dlLAssets3List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
+        usleep(50)
+        while threads1 >= max_threads {
+            usleep(20)
         }
-        dlLAssets3Done = true
+        usleep(50)
     }
-    dlqueue4.async {
-        for i in (dlLAssets3List + 1)...dlLAssets4List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlLAssets4Done = true
-    }
-    dlqueue5.async {
-        for i in (dlLAssets4List + 1)...dlLAssets5List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlLAssets5Done = true
-    }
-    dlqueue6.async {
-        for i in (dlLAssets5List + 1)...dlLAssets6List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlLAssets6Done = true
-    }
-    dlqueue7.async {
-        for i in (dlLAssets6List + 1)...dlLAssets7List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlLAssets7Done = true
-    }
-    dlqueue8.async {
-        for i in (dlLAssets7List + 1)...dlLAssets8List {
-            do {
-                try downloadLunarAsset(i: i, index: index, base: base)
-            } catch {
-                do {
-                    try downloadLunarAsset(i: i, index: index, base: base)
-                } catch {
-                    fputs("Failed to download asset \(index[i].components(separatedBy: " ")[0])\n\(error)\n", stderr)
-                }
-            }
-        }
-        dlLAssets8Done = true
-    }
-    while !dlLAssets1Done || !dlLAssets2Done || !dlLAssets3Done || !dlLAssets4Done || !dlLAssets5Done || !dlLAssets6Done || !dlLAssets7Done || !dlLAssets8Done {
-        usleep(500000)
-    }
-}
-func downloadMcAsset(i: Int, hashes: [String]) throws {
-    let first2hash = String(hashes[i].prefix(2))
-    if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
-        try Data(contentsOf: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-        print("Downloaded asset:", hashes[i])
-    }
-}
-func downloadLunarAsset(i: Int, index: [String], base: String) throws {
-    if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
-        if !FileManager.default.fileExists(atPath: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent().path) {
-            try FileManager.default.createDirectory(at: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]).deletingLastPathComponent(), withIntermediateDirectories: true)
-        }
-        let data = try Data(contentsOf: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
-        try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
-        print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
+    while downloadsLeft1 > 25 {
+        usleep(500)
     }
 }
