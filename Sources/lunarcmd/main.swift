@@ -470,7 +470,8 @@ do {
     lunarCmd.arguments?.append("--ichorExternalFiles")
     lunarCmd.arguments?.append(optifine)
     if argv.contains("--server") {
-        lunarCmd.arguments?.append("--server=" + argv[argv.firstIndex(of: "--server")! + 1])
+        lunarCmd.arguments?.append("--server")
+        lunarCmd.arguments?.append(argv[argv.firstIndex(of: "--server")! + 1])
     }
     if argv.contains("--width") {
         lunarCmd.arguments?.append("--width=" + argv[argv.firstIndex(of: "--width")! + 1])
