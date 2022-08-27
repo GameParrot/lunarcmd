@@ -205,6 +205,22 @@ func downloadVersionData(branch: String) {
     var json: [String:String] = ["hwid": "0", "hwid_private": "0", "os": os, "arch": arch, "launcher_version": "2.12.7", "version": "\(versionLaunching)", "branch": branch, "classifier": "0", "module": "lunar", "os_release": kernelVersion, "launch_type": "OFFLINE"]
     if argv.contains("--no-optifine") {
         json["module"] =  "lunar-noOF"
+        if argv.contains("--sodium") {
+        	fputs("Error: Cannot specify both --no-optifine and --sodium\n", stderr)
+        	exit(-1)
+    	}
+    }
+    if argv.contains("--sodium") {
+        json["module"] =  "sodium"
+    }
+    if argv.contains("--launch-override") {
+        var overrideIndex = 0
+        for i in argv {
+            if i == "--launch-override" {
+            	json[argv[overrideIndex + 1].components(separatedBy: "=")[0]] = argv[overrideIndex + 1].components(separatedBy: "=")[1]
+            }
+            overrideIndex+=1
+        }
     }
 #if DEBUG
     print("Request body: \(json)")
@@ -253,7 +269,7 @@ func downloadVersionData(branch: String) {
     }
 }
 if argv.contains("-h") || argv.contains("--help") {
-    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine] [--max-threads]\nArgument description:\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF\n--max-threads - Sets the max number of threads for downloading (Default: 8)")
+    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine] [--max-threads] [--sodium] [--launch-override <override>]\nArgument description:\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF\n--max-threads - Sets the max number of threads for downloading (Default: 8)\n--sodium - Uses Sodium instead of OptiFine; compatible with 1.16 and newer\n--launch-override <override> - Overrides an option in the launch request, override formatted as <param>=<value>")
     exit(0)
 }
 // Argument checks below
@@ -305,6 +321,23 @@ if argv.contains("--jvm") {
             }
         }
         checkIndex+=1
+    }
+}
+if argv.contains("--launch-override") {
+    var checkIndex1 = 0
+    for i in argv {
+        if i == "--launch-override" {
+            if !argv.indices.contains(checkIndex1 + 1) {
+                fputs("Error: --launch-override requires an option to be specified\n", stderr)
+                exit(-1)
+            } else {
+            	if !argv[checkIndex1 + 1].contains("=") {
+            	    fputs("Error: Incorrect formatting of launch override, should be formatted as <param>=<value>\n", stderr)
+            	    exit(-1)
+            	}
+            }
+        }
+        checkIndex1+=1
     }
 }
 if argv.contains("--gameDir") {
@@ -410,12 +443,10 @@ do {
     lunarCmd.arguments?.append("-cp")
     var classpath = ""
     var optifine = ""
-    for i in try FileManager.default.contentsOfDirectory(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)") {
-        if i.contains(".jar") || i.contains("optifine") {
-            repeatIndex+=1
-            if i.contains("OptiFine_v1") {
-                optifine = i
-            } else {
+    if argv.contains("--sodium") {
+        for i in try FileManager.default.contentsOfDirectory(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)") {
+            if i.contains(".jar") && !i.lowercased().contains("optifine") {
+                repeatIndex+=1
 #if DEBUG
                 print("Added \(i) to classpath")
 #endif
@@ -423,6 +454,24 @@ do {
                     classpath = classpath + ":" + i
                 } else {
                     classpath = classpath + i
+                }
+            }
+        }
+    } else {
+        for i in try FileManager.default.contentsOfDirectory(atPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)") {
+            if (i.contains(".jar") || i.lowercased().contains("optifine")) && !(i.lowercased().contains("sodium") || i.lowercased().contains("iris") || i.lowercased().contains("indium")) {
+                repeatIndex+=1
+                if i.contains("OptiFine_v1") {
+                    optifine = i
+                } else {
+#if DEBUG
+                    print("Added \(i) to classpath")
+#endif
+                    if repeatIndex != 1 {
+                        classpath = classpath + ":" + i
+                    } else {
+                        classpath = classpath + i
+                    }
                 }
             }
         }
