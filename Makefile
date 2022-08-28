@@ -20,7 +20,7 @@ ifeq ($(UNAME), Darwin)
 	@echo "\033[32;1mBuild succeeded. To install, run "'`sudo make install`'"\033[0m"
 else
 	-mkdir bin
-	swift build -c release
+	swift build -c release --static-swift-stdlib
 	$(eval X64_PATH=$(shell swift build -c release --show-bin-path | tail -n 1))
 	cp "$(X64_PATH)/lunarcmd" bin/lunarcmd
 	@echo "\033[32;1mBuild succeeded. To install, run "'`sudo make install`'"\033[0m"
