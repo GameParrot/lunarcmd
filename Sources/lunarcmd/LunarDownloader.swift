@@ -38,7 +38,7 @@ func downloadVersionData(branch: String) {
     } catch {
         TinyLogger.log.error(msg: "Could not get available versions\n", format: logFormat)
     }
-    TinyLogger.log.info(msg: "Downloading Lunar assets...")
+    TinyLogger.log.info(msg: "Downloading Lunar assets...", format: logFormat)
     let kernelVersionTask = Process()
 #if os(macOS)
     kernelVersionTask.executableURL = URL(fileURLWithPath: "/usr/bin/uname")
