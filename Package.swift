@@ -12,6 +12,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/FreeApp2014/SwiftyJSON", from: "17.0.6"),
         .package(url: "https://github.com/weichsel/ZIPFoundation", .upToNextMajor(from: "0.9.9")),
+        .package(url: "https://github.com/GameParrot/TinyLogger.git", .upToNextMajor(from: "1.0.0")),
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
     ],
@@ -20,6 +21,6 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .executableTarget(
             name: "lunarcmd",
-            dependencies: ["SwiftyJSON", "ZIPFoundation"]),
+            dependencies: ["SwiftyJSON", "ZIPFoundation", "TinyLogger"]),
     ]
 )

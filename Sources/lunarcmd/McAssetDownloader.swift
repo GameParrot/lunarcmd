@@ -1,6 +1,7 @@
 // Minecraft Asset Downloader
 
 import Foundation
+import TinyLogger
 func prase(string: String, key: String) -> [String] {
     var keys = [""]
     for i in string.components(separatedBy: "\"" + key + "\": \"") {
@@ -9,7 +10,7 @@ func prase(string: String, key: String) -> [String] {
     keys.remove(at: 0)
     keys.remove(at: 0)
 #if DEBUG
-    print("Found \(keys) in json")
+    TinyLogger.log.debug(msg: "Found \(keys) in json", format: logFormat)
 #endif
     return keys
 }
@@ -36,12 +37,15 @@ func getAssets(version: String) throws {
                 if !FileManager.default.fileExists(atPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]) {
                     try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
                     try dataDownload(url: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
-                    print("Downloaded asset:", hashes[i])
+                    TinyLogger.log.info(msg: "Downloaded asset: " + hashes[i], format: logFormat)
                 } else {
+#if DEBUG
+                    TinyLogger.log.debug(msg: "Already downloaded asset: " + hashes[i], format: logFormat)
+#endif
                     usleep(1000)
                 }
             } catch {
-                print(error)
+                TinyLogger.log.error(msg: "\(error)" + hashes[i], format: logFormat)
             }
             threads-=1
             downloadsLeft-=1

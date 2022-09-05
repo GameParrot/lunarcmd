@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "TinyLogger",
+        "repositoryURL": "https://github.com/GameParrot/TinyLogger.git",
+        "state": {
+          "branch": null,
+          "revision": "a1213819225790bd9f78516566bab90ed2205dc4",
+          "version": "1.0.1"
+        }
+      },
+      {
         "package": "ZIPFoundation",
         "repositoryURL": "https://github.com/weichsel/ZIPFoundation",
         "state": {

@@ -1,6 +1,7 @@
 // LunarCmd Main Source file
 
 import Foundation
+import TinyLogger
 #if os(Linux)
 import FoundationNetworking
 #endif
@@ -51,6 +52,7 @@ var mainClass = "com.moonsworth.lunar.patcher.LunarMain"
 var versionLaunching = ""
 var noVersionPassed = false
 var classPathMap: [String:Bool] = [:]
+let logFormat = "[%t] [%f/%T]: %m"
 if argv.contains("-version") {
 #if DEBUG
     print("LunarCmd \(lunarcmdVersion) (Debug build)")
@@ -193,18 +195,18 @@ var logAddons = false
 if argv.contains("--logAddons") {
     logAddons = true
 }
-print("Updating asset index...")
+TinyLogger.log.info(msg: "Updating asset index...", format: logFormat)
 do {
     try getAssets(version: versionLaunching) // Updates the asset index
 } catch {
-    fputs("Error downloading assets\n\(error)\n", stderr)
+    TinyLogger.log.fatal(msg: "Error downloading assets\n\(error)\n", format: logFormat)
     exit(-1)
 }
 if argv.contains("--downloadOnly") {
-    print("--downloadOnly passed, exiting")
+    TinyLogger.log.info(msg: "--downloadOnly passed, exiting", format: logFormat)
     exit(0)
 }
-print("Preparing to launch Lunar Client \(versionLaunching)")
+TinyLogger.log.info(msg: "Preparing to launch Lunar Client \(versionLaunching)", format: logFormat)
 let lunarCmd = Process()
 do {
     let jreVersionPath = homeDir + "/.lunarcmd_data/jre_\(arch)/\(versionLaunching)" // Sets the path to the Java folder
@@ -241,12 +243,12 @@ do {
                     if classPathMap[i] ?? false {
                         externalFiles = externalFiles + i + ","
 #if DEBUG
-                        print("Added \(i) to external files")
+                        TinyLogger.log.debug(msg: "Added \(i) to external files", format: logFormat)
 #endif
                     } else {
                         repeatIndex+=1
 #if DEBUG
-                        print("Added \(i) to classpath")
+                        TinyLogger.log.debug(msg: "Added \(i) to classpath", format: logFormat)
 #endif
                         if repeatIndex != 1 {
                             classpath = classpath + ":" + i
@@ -263,12 +265,12 @@ do {
                 if classPathMap[i] ?? false {
                     externalFiles = externalFiles + i + ","
 #if DEBUG
-                    print("Added \(i) to external files")
+                    TinyLogger.log.debug(msg: "Added \(i) to external files", format: logFormat)
 #endif
                 } else {
                     repeatIndex+=1
 #if DEBUG
-                    print("Added \(i) to classpath")
+                    TinyLogger.log.debug(msg: "Added \(i) to classpath", format: logFormat)
 #endif
                     if repeatIndex != 1 {
                         classpath = classpath + ":" + i
@@ -336,11 +338,10 @@ do {
         lunarCmd.arguments?.append("False")
     }
     lunarCmd.currentDirectoryURL = URL(fileURLWithPath: homeDir + "/.lunarcmd_data/offline/\(versionLaunching)/")
-    print("Java executable: \(lunarCmd.executableURL!.path)\nArguments: \(lunarCmd.arguments!)")
+    TinyLogger.log.info(msg: "Java executable: \(lunarCmd.executableURL!.path), Arguments: \(lunarCmd.arguments!)", format: logFormat)
     let pipe = Pipe()
     lunarCmd.standardOutput = pipe
     let outHandle = pipe.fileHandleForReading
-    
     outHandle.readabilityHandler = { pipe in
         if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
             if line.contains("Can't ping production.spectrum.moonsworth.cloud.:222") && argv.contains("--quitOnLeave") {
@@ -366,7 +367,7 @@ do {
                 print(line, terminator:"")
             }
         } else {
-            print("Error decoding data: \(pipe.availableData)")
+            TinyLogger.log.error(msg: "Error decoding data: \(pipe.availableData)", format: logFormat)
         }
     }
     if logAddons {
@@ -377,13 +378,13 @@ do {
             if let line = String(data: pipe1.availableData, encoding: String.Encoding.utf8) {
                 print("\u{001B}[0;0m\u{001B}[0;31m" + line, terminator:"")
             } else {
-                print("Error decoding data: \(pipe1.availableData)")
+                TinyLogger.log.error(msg: "Error decoding data: \(pipe1.availableData)", format: logFormat)
             }
         }
     }
     try lunarCmd.run()
 } catch {
-    fputs("Error launching game\n\(error)\n", stderr)
+    TinyLogger.log.error(msg: "Error launching game\n\(error)\n", format: logFormat)
     exit(-1)
 }
 signal(SIGINT, SIG_IGN)
