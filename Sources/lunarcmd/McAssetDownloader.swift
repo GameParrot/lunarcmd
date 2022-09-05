@@ -37,6 +37,8 @@ func getAssets(version: String) throws {
                     try FileManager.default.createDirectory(at: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash), withIntermediateDirectories: true)
                     try dataDownload(url: URL(string: "https://resources.download.minecraft.net/" + first2hash + "/" + hashes[i])!).write(to: URL(fileURLWithPath: gameDir + "/assets/objects/" + first2hash + "/" + hashes[i]))
                     print("Downloaded asset:", hashes[i])
+                } else {
+                    usleep(1000)
                 }
             } catch {
                 print(error)

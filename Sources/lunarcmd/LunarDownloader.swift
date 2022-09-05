@@ -239,6 +239,8 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
                     let data = try dataDownload(url: URL(string: base + index[i].components(separatedBy: " ")[1])!) // Downloads the file
                     try data.write(to: URL(fileURLWithPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]))
                     print("Downloaded Lunar asset:", index[i].components(separatedBy: " ")[0])
+                } else {
+                    usleep(1000)
                 }
             } catch {
                 print(error)
