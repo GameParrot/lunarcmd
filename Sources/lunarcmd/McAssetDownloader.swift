@@ -29,8 +29,7 @@ func getAssets(version: String) throws {
     var threads = 0
     var downloadsLeft = hashes.count
     for i in 0...(hashes.count - 1) {
-        let dlqueue1 = DispatchQueue(label: "dlmc")
-        dlqueue1.async {
+        Thread.detachNewThread {
             threads+=1
             do {
                 let first2hash = String(hashes[i].prefix(2))

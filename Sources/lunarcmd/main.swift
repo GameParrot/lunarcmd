@@ -384,7 +384,7 @@ do {
     }
     try lunarCmd.run()
 } catch {
-    TinyLogger.log.error(msg: "Error launching game\n\(error)\n", format: logFormat)
+    TinyLogger.log.fatal(msg: "Error launching game\n\(error)\n", format: logFormat)
     exit(-1)
 }
 signal(SIGINT, SIG_IGN)

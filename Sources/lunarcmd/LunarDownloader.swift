@@ -38,7 +38,7 @@ func downloadVersionData(branch: String) {
     } catch {
         TinyLogger.log.error(msg: "Could not get available versions\n", format: logFormat)
     }
-    TinyLogger.log.info(msg: "Downloading Lunar assets...", format: logFormat)
+    TinyLogger.log.info(msg: "Fetching Lunar launch data...", format: logFormat)
     let kernelVersionTask = Process()
 #if os(macOS)
     kernelVersionTask.executableURL = URL(fileURLWithPath: "/usr/bin/uname")
@@ -108,6 +108,7 @@ func downloadVersionData(branch: String) {
     TinyLogger.log.debug(msg: "Launch response: \(jsonresponse)", format: logFormat)
 #endif
     do {
+        TinyLogger.log.info(msg: "Downloading Lunar assets...", format: logFormat)
         try getLunarAssets(index: try stringDownload(url: URL(string: jsonresponse["textures"]["indexUrl"].string!)!).components(separatedBy: "\n"), base: jsonresponse["textures"]["baseUrl"].string!)
         try getLunarJavaData(artifacts: jsonresponse["launchTypeData"]["artifacts"])
         mainClass = jsonresponse["launchTypeData"]["mainClass"].string ?? "com.moonsworth.lunar.patcher.LunarMain"
@@ -127,8 +128,7 @@ func downloadLicenses(licenses: JSON) throws { // Function for downloading Lunar
     }
     var threads3 = 0
     for i in 0...(licenses.count - 1) {
-        let dlqueue3 = DispatchQueue(label: "dllis")
-        dlqueue3.async {
+        Thread.detachNewThread {
             threads3+=1
             do {
                 if licenses[i]["url"].string != nil {
@@ -192,8 +192,7 @@ func getLunarJavaData(artifacts: JSON) throws { // Function for downloading Luna
     var threads2 = 0
     var downloadsLeft2 = artifacts.count
     for i in 0...(artifacts.count - 1) {
-        let dlqueue2 = DispatchQueue(label: "dljar")
-        dlqueue2.async {
+        Thread.detachNewThread {
             threads2+=1
             do {
                 if artifacts[i]["url"].string != nil {
@@ -242,8 +241,7 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
     var downloadsLeft1 = index.count
     var threads1 = 0
     for i in 0...(index.count - 1) {
-        let dlqueue = DispatchQueue(label: "dl")
-        dlqueue.async {
+        Thread.detachNewThread {
             threads1+=1
             do {
                 if !FileManager.default.fileExists(atPath: homeDir + "/.lunarcmd_data/textures/" + index[i].components(separatedBy: " ")[0]) {
@@ -271,7 +269,7 @@ func getLunarAssets(index: [String], base: String) throws { // Function for down
         }
         usleep(50)
     }
-    while downloadsLeft1 > 25 {
+    while downloadsLeft1 > 30 {
         usleep(500)
     }
 }

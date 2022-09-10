@@ -65,18 +65,20 @@ if __name__ == "__main__":
     let outHandle = pipe.fileHandleForReading
     outHandle.readabilityHandler = { pipe in
         if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
-            if line.hasSuffix("\n") {
-                TinyLogger.log.info(msg: String(line.dropLast(1)), format: "[%t] [%f/%T]: %m")
-            } else {
-                TinyLogger.log.info(msg: line, format: logFormat)
-            }
-            if line.contains("ModuleNotFoundError") {
-                TinyLogger.log.error(msg: "\u{001b}[31;1mError: You need Python modules `pywebview` and `procbridge` to use the Python sign in.\u{001b}[0m\n", format: logFormat)
-                return
-            }
-            if line.contains("not found") {
-                TinyLogger.log.error(msg: "\u{001b}[31;1mError: Python 3 is required to sign in.\u{001b}[0m\n", format: logFormat)
-                return
+            if line != "" {
+                if line.hasSuffix("\n") {
+                    TinyLogger.log.info(msg: String(line.dropLast(1)), format: "[%t] [%f/%T]: %m")
+                } else {
+                    TinyLogger.log.info(msg: line, format: logFormat)
+                }
+                if line.contains("ModuleNotFoundError") {
+                    TinyLogger.log.error(msg: "\u{001b}[31;1mError: You need Python modules `pywebview` and `procbridge` to use the Python sign in.\u{001b}[0m\n", format: logFormat)
+                    return
+                }
+                if line.contains("not found") {
+                    TinyLogger.log.error(msg: "\u{001b}[31;1mError: Python 3 is required to sign in.\u{001b}[0m\n", format: logFormat)
+                    return
+                }
             }
         }
     }
@@ -84,6 +86,14 @@ if __name__ == "__main__":
         try signin.run()
     } catch {
         
+    }
+    DispatchQueue.global(qos: .userInitiated).async {
+        if signin.isRunning {
+            signin.waitUntilExit()
+        }
+        if #available(macOS 10.15, *) {
+            try? outHandle.close()
+        }
     }
     TinyLogger.log.info(msg: "\u{001b}[32;1mSign in should have failed. The sign in listener has been started, so you should be able to sign in now.\u{001b}[0m", format: logFormat)
 }
