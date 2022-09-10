@@ -5,7 +5,7 @@ import TinyLogger
 #if os(Linux)
 import FoundationNetworking
 #endif
-let lunarcmdVersion = "3.0"
+let lunarcmdVersion = "3.2"
 #if DEBUG
 
 #else
