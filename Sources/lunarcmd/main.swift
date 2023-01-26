@@ -43,7 +43,10 @@ let arch = "arm64"
 #endif
 setbuf(stdout, nil)
 setbuf(stderr, nil)
-var max_threads = 8
+var max_threads = ProcessInfo.processInfo.processorCount
+if max_threads > 128 {
+    max_threads = 128
+}
 var nativesFile = "natives-\(osstring)-\(arch).zip"
 let argv = CommandLine.arguments // Sets a variable to the arguments
 let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
@@ -62,7 +65,7 @@ if argv.contains("-version") {
     exit(0)
 }
 if argv.contains("-h") || argv.contains("--help") {
-    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd [-version] --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine] [--max-threads] [--sodium] [--launch-override <override>] [--no-fps-booster] [--neu]\nArgument description\n-version - Print LunarCmd version and exit\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF\n--max-threads - Sets the max number of threads for downloading (Default: 8)\n--sodium - Uses Sodium instead of OptiFine; compatible with 1.16 and newer\n--launch-override <override> - Overrides an option in the launch request, override formatted as <param>=<value>\n--no-fps-booster - Stops the game from using an FPS Booster (OptiFine or Sodium)\n--neu - Sets NEU (Not Enough Updates) as the module")
+    print("Overview: LunarCmd launches Lunar Client from the command line.\nusage: lunarcmd [-version] --version <version> [--gameDir <game directory>] [--server <server to auto join>] [--mem <RAM allocation>] [--width <window width>] [--height <window height>] [--branch <lunar branch>] [--jvm <jvm argument>] [--javaExec <java executable>] [--storageDir <lunar client storage directory>] [--logAddons] [--downloadOnly] [--disablePythonSignIn] [--quitOnLeave] [--no-optifine] [--max-threads] [--sodium] [--launch-override <override>] [--no-fps-booster] [--neu]\nArgument description\n-version - Print LunarCmd version and exit\n--version <version> - (Required) The Lunar Client version to launch\n--gameDir <game directory> - The directory to use for game settings and worlds\n--server <server to auto join> - A server to connect to automatically when the game launches\n--mem <RAM allocation> - How much RAM to allocate to the game\n--width <window width> - The default width of the window\n--height <window width> - The default height of the window\n--branch <lunar branch> - The branch to use for the game\n--jvm <jvm argument> - Argument to pass to the JVM\n--javaExec <java executable> - The path to the Java executable\n--storageDir <lunar client storage directory> - Directory to use for Lunar Client and mod settings\n--logAddons - Enables coloring certain log messages and prints chat messages directly\n--downloadOnly - Downloads the game and assets without starting it\n--disablePythonSignIn - Disables the use of the Python sign in script\n--quitOnLeave - Quits the game when you leave a server. --server <server to auto join> must also be passed. `production.spectrum.moonsworth.cloud.:222` must also be in your server list for this to work.\n--no-optifine - Sets the module in the launch request to lunar-noOF\n--max-threads - Sets the max number of threads for downloading (Default: \(ProcessInfo.processInfo.processorCount))\n--sodium - Uses Sodium instead of OptiFine; compatible with 1.16 and newer\n--launch-override <override> - Overrides an option in the launch request, override formatted as <param>=<value>\n--no-fps-booster - Stops the game from using an FPS Booster (OptiFine or Sodium)\n--neu - Sets NEU (Not Enough Updates) as the module")
     exit(0)
 }
 // Argument checks below
@@ -82,8 +85,8 @@ if argv.contains("--max-threads") {
             fputs("Error: --max-threads should be above 0\n", stderr)
             exit(-1)
         }
-        if max_threads > 127 {
-            fputs("Error: --max-threads should be below 128\n", stderr)
+        if max_threads > 128 {
+            fputs("Error: --max-threads should not be above 128\n", stderr)
             exit(-1)
         }
     }
