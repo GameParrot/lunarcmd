@@ -12,7 +12,7 @@ import FoundationNetworking
 func downloadVersionData(branch: String) {
     do {
         var availableVersions: [String] = []
-        let availableVersionData = try dataDownload(url: URL(string: "https://api.lunarclientprod.com/launcher/metadata?launcher_version=3")!)
+        let availableVersionData = try dataDownload(url: URL(string: "https://api.lunarclientprod.com/launcher/metadata?launcher_version=2")!)
         let availableVersionDataJSON = JSON(data: availableVersionData)
         for i in 1...availableVersionDataJSON["versions"].count {
             availableVersions.append(availableVersionDataJSON["versions"][i - 1]["id"].string ?? "")
